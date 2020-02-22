@@ -594,7 +594,7 @@ end
 
 -- Applies an appropriate Sprite using the games own algorithm
 -- use_new_method = true will update instantly but lag a little
-function wand:UpdateSprite(use_new_method)
+function wand:UpdateSprite(use_old_method)
   local gun = {
     fire_rate_wait = self.castDelay,
     actions_per_round = self.spellsPerCast,
@@ -604,9 +604,9 @@ function wand:UpdateSprite(use_new_method)
     reload_time = self.rechargeTime,
   }
   local sprite_data = GetWand(gun)
-  local fun = SetWandSprite_old
-  if use_new_method then
-    fun = SetWandSprite
+  local fun = SetWandSprite
+  if use_old_method then
+    fun = SetWandSprite_old
   end
   fun(self.entity_id, self.ability_component,
     sprite_data.file, sprite_data.grip_x, sprite_data.grip_y,
