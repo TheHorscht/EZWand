@@ -1,12 +1,11 @@
 -- ########################################
--- #######   EZWand version 1.0.0   #######
+-- #######   EZWand version 1.0.1   #######
 -- ########################################
 
-dofile("data/scripts/gun/procedural/gun_action_utils.lua")
-dofile("data/scripts/lib/utilities.lua")
-if not GetWand then
-  dofile("data/scripts/gun/procedural/gun_procedural.lua")
-end
+dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
+dofile_once("data/scripts/lib/utilities.lua")
+dofile_once("data/scripts/gun/procedural/wands.lua")
+dofile_once("data/scripts/gun/procedural/gun_procedural.lua")
 
 -- ##########################
 -- ####       UTILS      ####
@@ -198,7 +197,9 @@ local function GetHotspotComponent(entity_id)
   end
 end
 
-local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offset_y, tip_x, tip_y)
+-- This version just updates image_file of the original SpriteComponent, which will only update the visuals once
+-- the next game tick comes along that updates sprites (every 60 frames?)
+local function SetWandSprite_old(entity_id, ability_comp, item_file, offset_x, offset_y, tip_x, tip_y)
 	if ability_comp ~= nil then
     ComponentSetValue(ability_comp, "sprite_file", item_file)
 	end
@@ -207,6 +208,63 @@ local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offse
 		ComponentSetValue(sprite_comp, "image_file", item_file)
 		ComponentSetValue(sprite_comp, "offset_x", offset_x)
     ComponentSetValue(sprite_comp, "offset_y", offset_y)
+	end
+	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
+  if hotspot_comp ~= nil then
+    -- EntitySetComponentIsEnabled(entity_id, hotspot_comp, true)
+    ComponentSetValueVector2(hotspot_comp, "offset", tip_x, tip_y)
+	end	
+end
+
+-- Updating the image_file attribute takes some frames to take effect,
+-- the game only updates sprites every 60 frames or something, so to work around that
+-- we create a new SpriteComponent, copy over all values of the old one, and remove the old one
+-- This will show the new Sprite instantly, but is slower than the old version
+local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offset_y, tip_x, tip_y)
+	if ability_comp ~= nil then
+    ComponentSetValue(ability_comp, "sprite_file", item_file)
+	end
+  local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
+  
+  local function GetComponentValues(comp, value_names)
+    local values_out = {
+      _tags="enabled_in_hand,enabled_in_world,item",
+      image_file=item_file,
+      offset_x=offset_x,
+      offset_y=offset_y,
+    }
+    for i, value_name in ipairs(value_names) do
+      values_out[value_name] = ComponentGetValue(comp, value_name)
+      print(value_name .. ": " .. values_out[value_name])
+    end
+    return values_out
+  end
+
+	if sprite_comp ~= nil then
+    EntityAddComponent(entity_id, "SpriteComponent", GetComponentValues(sprite_comp, {
+      "additive",
+      "alpha",
+      "emissive",
+      "fog_of_war_hole",
+      "has_special_scale",
+      "is_text_sprite",
+      "kill_entity_after_finished",
+      "never_ragdollify_on_death",
+      "rect_animation",
+      "next_rect_animation",
+      "offset_x",
+      "offset_y",
+      "smooth_filtering",
+      "special_scale_x",
+      "special_scale_y",
+      "text",
+      "ui_is_parent",
+      "update_transform",
+      "update_transform_rotation",
+      "visible",
+      "z_index",
+    }))
+    EntityRemoveComponent(entity_id, sprite_comp)
 	end
 	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp ~= nil then
@@ -529,12 +587,14 @@ function wand:Clone()
   for k, v in pairs(attached_spells) do
     new_wand:AttachSpells{v.action_id}
   end
+  -- TODO: Make this work if sprite_file is an xml
   SetWandSprite(new_wand.entity_id, new_wand.ability_component, GetWandSprite(self.entity_id, self.ability_component))
   return new_wand
 end
 
 -- Applies an appropriate Sprite using the games own algorithm
-function wand:UpdateSprite()
+-- use_new_method = true will update instantly but lag a little
+function wand:UpdateSprite(use_new_method)
   local gun = {
     fire_rate_wait = self.castDelay,
     actions_per_round = self.spellsPerCast,
@@ -543,8 +603,12 @@ function wand:UpdateSprite()
     spread_degrees = self.spread,
     reload_time = self.rechargeTime,
   }
-	local sprite_data = GetWand(gun)
-  SetWandSprite(self.entity_id, self.ability_component,
+  local sprite_data = GetWand(gun)
+  local fun = SetWandSprite_old
+  if use_new_method then
+    fun = SetWandSprite
+  end
+  fun(self.entity_id, self.ability_component,
     sprite_data.file, sprite_data.grip_x, sprite_data.grip_y,
     (sprite_data.tip_x - sprite_data.grip_x),
     (sprite_data.tip_y - sprite_data.grip_y))
