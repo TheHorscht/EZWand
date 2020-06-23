@@ -5,9 +5,7 @@ A utility library for mod developers of Noita which simplifies the workflow of c
 ## Installation
 Just move `EZWand.lua` somewhere and then:
 ```lua
-local EZWand = loadfile("EZWand.lua")()
--- or once Noitas dofile() works like it should:
-local EZWand = dofile("EZWand.lua")
+local EZWand = dofile_once("EZWand.lua")
 ```
 ## Usage
 ### Creation / constructors:
