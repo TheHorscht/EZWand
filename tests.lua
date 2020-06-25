@@ -15,19 +15,20 @@ local function GetHotspotComponent(entity_id)
   end
 end
 
-local function GetWandSprite(entity_id, ability_comp)
+function GetWandSprite(entity_id)
   local item_file, offset_x, offset_y, tip_x, tip_y
-	if ability_comp ~= nil then
-		item_file = ComponentGetValue(ability_comp, "sprite_file")
+  local ability_component = EntityGetFirstComponentIncludingDisabled(entity_id, "AbilityComponent")
+  if ability_component ~= nil then
+		item_file = ComponentGetValue2(ability_component, "sprite_file")
 	end
-	local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
+	local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
 	if sprite_comp ~= nil then
-		offset_x = ComponentGetValue(sprite_comp, "offset_x")
-    offset_y = ComponentGetValue(sprite_comp, "offset_y")
+		offset_x = ComponentGetValue2(sprite_comp, "offset_x")
+    offset_y = ComponentGetValue2(sprite_comp, "offset_y")
 	end
 	local hotspot_comp = GetHotspotComponent(entity_id) -- EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp ~= nil then
-    tip_x, tip_y = ComponentGetValueVector2(hotspot_comp, "offset")
+    tip_x, tip_y = ComponentGetValue2(hotspot_comp, "offset")
   end
   return item_file, offset_x, offset_y, tip_x, tip_y
 end
@@ -39,7 +40,7 @@ function test_constructors()
   assert(wand.ability_component ~= nil)
   -- Check if defaults were set
   for k,v in pairs(wand_props) do
-    assert(tonumber(wand[k]) == v.default)
+    assert(tonumber(wand[k]) == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
   end
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 0)
@@ -73,7 +74,7 @@ function test_constructors()
   test_Everything(wand)
   EntityKill(wand.entity_id)
 
-  wand = Wand("data/ws/wand_lib/wandy.xml")
+  wand = Wand("data/ws/EZWand/wandy.xml")
   assert(wand.entity_id ~= nil)
   assert(wand.ability_component ~= nil)
   test_Everything(wand)
@@ -247,7 +248,7 @@ end
 function test_Clone(wand)
   local cloned_wand = wand:Clone()
   for k,v in pairs(wand_props) do
-    assert(cloned_wand[k] == wand[k])
+    assert(cloned_wand[k] == wand[k], string.format("Clone failed, stats are not equal: %s, New wand: %s, Old wand: %s", k, tostring(cloned_wand[k]), tostring(wand[k])))
   end
   local spells, attached_spells = wand:GetSpells()
   local cloned_spells, cloned_attached_spells = wand:GetSpells()
@@ -265,16 +266,17 @@ function test_Clone(wand)
     assert(v.action_id == cloned_attached_spells[i].action_id)
   end
   -- Test if sprites are the same
-  local a1, b1, c1, d1, e1 = GetWandSprite(wand.entity_id, wand.ability_component)
-  local a2, b2, c2, d2, e2 = GetWandSprite(cloned_wand.entity_id, cloned_wand.ability_component)
-  assert(a1 == a2)
-  assert(b1 == b2)
-  assert(c1 == c2)
-  assert(d1 == d2)
-  assert(e1 == e2)
+  local a1, b1, c1, d1, e1 = GetWandSprite(wand.entity_id)
+  local a2, b2, c2, d2, e2 = GetWandSprite(cloned_wand.entity_id) 
+  assert(a1 == a2, string.format("Clone failed, %s ~= %s", a1, a2))
+  assert(b1 == b2, string.format("Clone failed, %s ~= %s", b1, b2))
+  assert(c1 == c2, string.format("Clone failed, %s ~= %s", c1, c2))
+  assert(d1 == d2, string.format("Clone failed, %s ~= %s", d1, d2))
+  assert(e1 == e2, string.format("Clone failed, %s ~= %s", e1, e2))
+  EntityKill(cloned_wand.entity_id)
 end
 
-function test_Everything(wand)
+function test_Everything(wand) -- Gets called multiple times from inside test_constructors, DON'T CALL THIS YOURSELF
   test_getters_and_setters(wand)
   test_GetProperties(wand)
   test_SetProperties(wand)

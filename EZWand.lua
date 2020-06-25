@@ -224,23 +224,16 @@ local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offse
 	if ability_comp ~= nil then
     ComponentSetValue(ability_comp, "sprite_file", item_file)
 	end
-  local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
-  
   local function GetComponentValues(comp, value_names)
-    local values_out = {
-      _tags="enabled_in_hand,enabled_in_world,item",
-      image_file=item_file,
-      offset_x=offset_x,
-      offset_y=offset_y,
-    }
+    local values_out = {}
     for i, value_name in ipairs(value_names) do
       values_out[value_name] = ComponentGetValue(comp, value_name)
     end
     return values_out
   end
-
-	if sprite_comp ~= nil then
-    EntityAddComponent(entity_id, "SpriteComponent", GetComponentValues(sprite_comp, {
+  local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
+  if sprite_comp ~= nil then
+    local old_sprite_component_values = GetComponentValues(sprite_comp, {
       "additive",
       "alpha",
       "emissive",
@@ -262,7 +255,12 @@ local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offse
       "update_transform_rotation",
       "visible",
       "z_index",
-    }))
+    })
+    old_sprite_component_values._tags = "enabled_in_hand,enabled_in_world,item"
+    old_sprite_component_values.image_file = item_file
+    old_sprite_component_values.offset_x = offset_x
+    old_sprite_component_values.offset_y = offset_y
+    EntityAddComponent(entity_id, "SpriteComponent", old_sprite_component_values)
     EntityRemoveComponent(entity_id, sprite_comp)
 	end
 	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
@@ -277,14 +275,14 @@ local function GetWandSprite(entity_id, ability_comp)
 	if ability_comp ~= nil then
 		item_file = ComponentGetValue(ability_comp, "sprite_file")
 	end
-	local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
+	local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
 	if sprite_comp ~= nil then
-		offset_x = ComponentGetValue(sprite_comp, "offset_x")
-    offset_y = ComponentGetValue(sprite_comp, "offset_y")
+		offset_x = ComponentGetValue2(sprite_comp, "offset_x")
+    offset_y = ComponentGetValue2(sprite_comp, "offset_y")
 	end
 	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp ~= nil then
-    tip_x, tip_y = ComponentGetValueVector2(hotspot_comp, "offset")
+    tip_x, tip_y = ComponentGetValue2(hotspot_comp, "offset")
   end
   return item_file, offset_x, offset_y, tip_x, tip_y
 end
@@ -444,7 +442,7 @@ function wand:_AddSpells(spells, attach)
       AddGunAction(self.entity_id, action_id)
     else
       -- Extend slots to not consume one slot
-      self.capacity = self.capacity + 1
+      -- self.capacity = self.capacity + 1
       AddGunActionPermanent(self.entity_id, action_id)
     end
   end
@@ -615,26 +613,25 @@ end
 
 function wand:PlaceAt(x, y)
 	EntitySetComponentIsEnabled(self.entity_id, self.ability_component, true)
-	local hotspot_comp = get_component_with_member(self.entity_id, "sprite_hotspot_name")
+	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "HotspotComponent")
 	EntitySetComponentIsEnabled(self.entity_id, hotspot_comp, true)
-  local item_component = get_component_with_member(self.entity_id, "collect_nondefault_actions")
+  local item_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "ItemComponent")
 	EntitySetComponentIsEnabled(self.entity_id, item_component, true)
-	local sprite_component = get_component_with_member(self.entity_id, "rect_animation")
+	local sprite_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteComponent")
 	EntitySetComponentIsEnabled(self.entity_id, sprite_component, true)
-	local light_component = get_component_with_member(self.entity_id, "blinking_freq")
-	EntitySetComponentIsEnabled(self.entity_id, light_component, true)
-	edit_component(self.entity_id, "ItemComponent", function(comp, vars)
-		ComponentSetValue(comp, "has_been_picked_by_player", "0")
-		ComponentSetValue(comp, "play_hover_animation", "1")
-		ComponentSetValueVector2(comp, "spawn_pos", x, y)
-	end)
-	local lua_comp = get_component_with_member(self.entity_id, "script_item_picked_up")
+  local light_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "LightComponent")
+  EntitySetComponentIsEnabled(self.entity_id, light_component, true)
+  
+  ComponentSetValue(item_component, "has_been_picked_by_player", "0")
+  ComponentSetValue(item_component, "play_hover_animation", "1")
+  ComponentSetValueVector2(item_component, "spawn_pos", x, y)
+
+	local lua_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "LuaComponent")
 	EntitySetComponentIsEnabled(self.entity_id, lua_comp, true)
-	edit_component(self.entity_id, "SimplePhysicsComponent", function(comp, vars)
-		EntitySetComponentIsEnabled(self.entity_id, comp, false)
-	end)
+	local simple_physics_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SimplePhysicsComponent")
+  EntitySetComponentIsEnabled(self.entity_id, simple_physics_component, false)
 	-- Does this wand have a ray particle effect? Most do, except the starter wands
-	local sprite_particle_emitter_comp = get_component_with_member(self.entity_id, "velocity_always_away_from_center")
+	local sprite_particle_emitter_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteParticleEmitterComponent")
 	if sprite_particle_emitter_comp ~= nil then
 		EntitySetComponentIsEnabled(self.entity_id, sprite_particle_emitter_comp, true)
 	else
