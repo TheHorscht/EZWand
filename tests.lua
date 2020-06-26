@@ -160,6 +160,29 @@ function test_AddSpells(wand)
   assert(attached_spells_count == 8)
 end
 
+function test_GetSpellsCount(wand)
+  wand:RemoveSpells()
+  wand:DetachSpells()
+  local spells_count, attached_spells_count = wand:GetSpellsCount()
+  assert(spells_count == 0)
+  assert(attached_spells_count == 0)
+  wand:AddSpells{"BULLET", "BULLET"}
+  spells_count, attached_spells_count = wand:GetSpellsCount()
+  assert(spells_count == 2)
+  assert(attached_spells_count == 0)
+  wand:RemoveSpells()
+  wand:AttachSpells{"BULLET", "BULLET"}
+  spells_count, attached_spells_count = wand:GetSpellsCount()
+  assert(spells_count == 0)
+  assert(attached_spells_count == 2)
+  wand:DetachSpells()
+  wand:AddSpells{"BULLET", "BULLET"}
+  wand:AttachSpells{"BULLET", "BULLET"}
+  spells_count, attached_spells_count = wand:GetSpellsCount()
+  assert(spells_count == 2)
+  assert(attached_spells_count == 2)
+end
+
 function test_GetSpells(wand)
   local spells, attached_spells
   local to_add = { "BULLET", "BOUNCY_ORB", "BOUNCY_ORB", "BULLET", "BLACK_HOLE", "BULLET" }
@@ -283,6 +306,7 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_RemoveSpells(wand)
   test_AddSpells(wand)
   test_GetSpells(wand)
+  test_GetSpellsCount(wand)
   test_RemoveSpecificSpells(wand)
   test_Clone(wand)
 end

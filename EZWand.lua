@@ -140,19 +140,6 @@ end
   return false
 end
 
-function get_component_with_member(entity_id, member_name)
-  local components = EntityGetAllComponents(entity_id)
-  if components ~= nil then
-    for _, component_id in ipairs(components) do
-      for k, v in pairs(ComponentGetMembers(component_id)) do
-        if(k == member_name) then
-          return component_id
-        end
-      end
-    end
-  end
-end
-
 -- Returns true if entity is a wand
 local function entity_is_wand(entity_id)
 	local comp = EntityGetComponent(entity_id, "ManaReloaderComponent")
@@ -163,22 +150,6 @@ local function ends_with(str, ending)
   return ending == "" or str:sub(-#ending) == ending
 end
 
-local function get_ability_component(entity_id)
-  local ability_components = EntityGetComponent(entity_id, "AbilityComponent")
-  if ability_components ~= nil and ability_components[1] ~= nil then
-    return ability_components[1]
-  else
-    local components = EntityGetAllComponents(entity_id)
-    for i, component_id in ipairs(components) do
-      for k, v2 in pairs(ComponentGetMembers(component_id)) do
-        if(k == "mItemRecoil") then
-          return component_id
-        end
-      end
-    end
-  end
-end
-
 local function validate_property(name, value)
   if wand_props[name] == nil then
     error(name .. " is not a valid wand property.")
@@ -187,29 +158,20 @@ local function validate_property(name, value)
     -- check if value has the correct format etc for key
   end
 end
-
-local function GetHotspotComponent(entity_id)
-  local comps = EntityGetAllComponents(entity_id)
-  for i,v in ipairs(comps) do
-    if ComponentGetValue(v, "transform_with_scale") ~= "" then
-      return v
-    end
-  end
-end
-
+-- TODO: Write test for this?
 -- This version just updates image_file of the original SpriteComponent, which will only update the visuals once
 -- the next game tick comes along that updates sprites (every 60 frames?)
 local function SetWandSprite_old(entity_id, ability_comp, item_file, offset_x, offset_y, tip_x, tip_y)
 	if ability_comp ~= nil then
     ComponentSetValue(ability_comp, "sprite_file", item_file)
 	end
-	local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
+	local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
 	if sprite_comp ~= nil then
 		ComponentSetValue(sprite_comp, "image_file", item_file)
 		ComponentSetValue(sprite_comp, "offset_x", offset_x)
     ComponentSetValue(sprite_comp, "offset_y", offset_y)
 	end
-	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
+	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp ~= nil then
     -- EntitySetComponentIsEnabled(entity_id, hotspot_comp, true)
     ComponentSetValueVector2(hotspot_comp, "offset", tip_x, tip_y)
@@ -222,7 +184,7 @@ end
 -- This will show the new Sprite instantly, but is slower than the old version
 local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offset_y, tip_x, tip_y)
 	if ability_comp ~= nil then
-    ComponentSetValue(ability_comp, "sprite_file", item_file)
+    ComponentSetValue2(ability_comp, "sprite_file", item_file)
 	end
   local function GetComponentValues(comp, value_names)
     local values_out = {}
@@ -231,7 +193,7 @@ local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offse
     end
     return values_out
   end
-  local sprite_comp = EntityGetFirstComponent(entity_id, "SpriteComponent", "item")
+  local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
   if sprite_comp ~= nil then
     local old_sprite_component_values = GetComponentValues(sprite_comp, {
       "additive",
@@ -263,7 +225,7 @@ local function SetWandSprite(entity_id, ability_comp, item_file, offset_x, offse
     EntityAddComponent(entity_id, "SpriteComponent", old_sprite_component_values)
     EntityRemoveComponent(entity_id, sprite_comp)
 	end
-	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
+	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp ~= nil then
     -- EntitySetComponentIsEnabled(entity_id, hotspot_comp, true)
     ComponentSetValueVector2(hotspot_comp, "offset", tip_x, tip_y)
@@ -273,14 +235,14 @@ end
 local function GetWandSprite(entity_id, ability_comp)
   local item_file, offset_x, offset_y, tip_x, tip_y
 	if ability_comp ~= nil then
-		item_file = ComponentGetValue(ability_comp, "sprite_file")
+		item_file = ComponentGetValue2(ability_comp, "sprite_file")
 	end
 	local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
 	if sprite_comp ~= nil then
 		offset_x = ComponentGetValue2(sprite_comp, "offset_x")
     offset_y = ComponentGetValue2(sprite_comp, "offset_y")
 	end
-	local hotspot_comp = GetHotspotComponent(entity_id) --EntityGetFirstComponent(entity_id, "HotspotComponent", "shoot_pos")
+	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp ~= nil then
     tip_x, tip_y = ComponentGetValue2(hotspot_comp, "offset")
   end
@@ -320,7 +282,7 @@ function wand:new(from, rng_seed_x, rng_seed_y)
   if type(from) == "table" or from == nil then
     -- Just load some existing wand that we alter later instead of creating one from scratch
     protected.entity_id = EntityLoad("data/entities/items/wand_level_04.xml")
-    protected.ability_component = get_ability_component(protected.entity_id)
+    protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
     -- Copy all validated props over or initialize with defaults
     local props = from or {}
     validate_wand_properties(props)
@@ -330,14 +292,14 @@ function wand:new(from, rng_seed_x, rng_seed_y)
   elseif type(from) == "number" then
     -- Wrap an existing wand
     protected.entity_id = from
-    protected.ability_component = get_ability_component(protected.entity_id)
+    protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
   else
     -- Load a wand by xml
     if ends_with(from, ".xml") then
       local player_unit = EntityGetWithTag("player_unit")[1]
       local x, y = EntityGetTransform(player_unit)
       protected.entity_id = EntityLoad(from, rng_seed_x or x, rng_seed_y or y)
-      protected.ability_component = get_ability_component(protected.entity_id)
+      protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
     else
       error("Wrong format for wand creation.")
     end
@@ -474,23 +436,19 @@ end
 -- Returns: spells_count, always_cast_spells_count
 function wand:GetSpellsCount()
 	local children = EntityGetAllChildren(self.entity_id)
-  local num_children = children and #children or 0
-  
   if children == nil then
     return 0, 0
   end
   -- Count the number of always cast spells
   local always_cast_spells_count = 0
-  for i,v in ipairs(children) do
-    local all_comps = EntityGetAllComponents(v)
-    for i, c in ipairs(all_comps) do
-      if ComponentGetValue(c, "permanently_attached") == "1" then
-        always_cast_spells_count = always_cast_spells_count + 1
-      end
+  for i,spell in ipairs(children) do
+    local item_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemComponent")
+    if item_component ~= nil and ComponentGetValue2(item_component, "permanently_attached") == true then
+      always_cast_spells_count = always_cast_spells_count + 1
     end
   end
 
-	return num_children - always_cast_spells_count, always_cast_spells_count
+	return #children - always_cast_spells_count, always_cast_spells_count
 end
 -- Returns two values:
 -- 1: table of spells with each entry having the format { action_id = "BLACK_HOLE", inventory_x = 1, entity_id = <action_entity_id> }
