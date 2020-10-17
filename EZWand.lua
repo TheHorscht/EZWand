@@ -462,38 +462,29 @@ function wand:GetSpells()
   if children == nil then
     return spells, always_cast_spells
   end
-	for _, v in ipairs(children) do
-		local all_comps = EntityGetAllComponents(v)
+	for _, spell in ipairs(children) do
 		local action_id = nil
 		local permanent = false
 		local inventory_x = -1
-		-- TODO: Refactor this when EntityGetComponent() returns disabled components...
-		for _, c in ipairs(all_comps) do
-			-- ItemActionComponent::action_id
-			local val = ComponentGetValue(c, "action_id")
-			if val ~= "" then
-				action_id = val
-			end
-			-- ItemComponent::permanently_attached
-			val = ComponentGetValue(c, "permanently_attached")
-			if val ~= "" then
-				if val == "1" then
-					permanent = true
-				end
-				local inventory_y
-				-- ItemComponent::inventory_slot.x [0, count] gives the slot it's in
-        -- Does not work yet, always returns 0, 0...
-				inventory_x, inventory_y = ComponentGetValueVector2(c, "inventory_slot")
-			end
-		end
-		if action_id ~= nil then
+    local item_action_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemActionComponent")
+    if item_action_component then
+      local val = ComponentGetValue2(item_action_component, "action_id")
+      action_id = val
+    end
+    local item_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemComponent")
+    if item_component then
+      permanent = ComponentGetValue2(item_component, "permanently_attached")      
+      local inventory_y
+      inventory_x, inventory_y = ComponentGetValue2(item_component, "inventory_slot")
+    end
+    if action_id ~= nil then
 			if permanent == true then
-				table.insert(always_cast_spells, { action_id = action_id, entity_id = v, inventory_x = inventory_x })
+				table.insert(always_cast_spells, { action_id = action_id, entity_id = spell, inventory_x = inventory_x })
 			else
-				table.insert(spells, { action_id = action_id, entity_id = v, inventory_x = inventory_x })
+				table.insert(spells, { action_id = action_id, entity_id = spell, inventory_x = inventory_x })
 			end
 		end
-	end
+  end
 	return spells, always_cast_spells
 end
 
@@ -623,6 +614,6 @@ function wand:PutInPlayersInventory()
   end
 end
 
-return function(from)
-  return wand:new(from)
+return function(from, rng_seed_x, rng_seed_y)
+  return wand:new(from, rng_seed_x, rng_seed_y)
 end

@@ -43,8 +43,8 @@ function test_constructors()
     assert(tonumber(wand[k]) == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
   end
   spells_count, attached_spells_count = wand:GetSpellsCount()
-  assert(spells_count == 0)
-  assert(attached_spells_count == 0)
+  assert(spells_count == 0, "Spells count expected to be 0, got: " .. spells_count)
+  assert(attached_spells_count == 0, "Attached spells count expected to be 0, got: " .. attached_spells_count)
   test_Everything(wand)
   EntityKill(wand.entity_id)
 
@@ -191,7 +191,7 @@ function test_GetSpells(wand)
   wand:AddSpells(to_add)
   spells, attached_spells = wand:GetSpells()
   for i,v in ipairs(to_add) do
-    assert(v == spells[i].action_id)
+    assert(v == spells[i].action_id, string.format("Expected %s, got %s", v, spells[i].action_id))
   end
 
   wand:DetachSpells()
