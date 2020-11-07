@@ -1,3 +1,4 @@
+- FIX: Detach spells adds a slot?
 - Update functions for 1.0
 - Add function to freeze wand and spells on it
 - In the constructor, check if the entity id was passed in as a string

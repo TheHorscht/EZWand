@@ -1,5 +1,5 @@
 -- ########################################
--- #######   EZWand version 1.0.1   #######
+-- #######   EZWand version UNRELEASED   #######
 -- ########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -253,12 +253,12 @@ function wand:new(from, rng_seed_x, rng_seed_y)
       protected.entity_id = EntityLoad(from, rng_seed_x or x, rng_seed_y or y)
       protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
     else
-      error("Wrong format for wand creation.")
+      error("Wrong format for wand creation.", 2)
     end
   end
 
   if not entity_is_wand(protected.entity_id) then
-    error("Loaded entity is not a wand.")
+    error("Loaded entity is not a wand.", 2)
   end
 
   return o
@@ -344,12 +344,9 @@ function wand:GetProperties(keys)
 end
 -- For making the interface nicer, this allows us to use this one function here for
 function wand:_AddSpells(spells, attach)
-  if type(spells) ~= "table" then
-    error("'spells' should be a table with action_id strings")
-  end
   -- Check if capacity is sufficient
   if not attach and self:GetSpellsCount() + #spells > tonumber(self.capacity) then
-    error("Wand capacity too low to add that many spells.")
+    error("Wand capacity too low to add that many spells.", 3)
   end
   for i,action_id in ipairs(spells) do
     if not attach then
@@ -557,7 +554,7 @@ function wand:PutInPlayersInventory()
     end
     EntityAddChild(inventory_id, self.entity_id)
   else
-    error("Cannot add wand to players inventory, it's already full.")
+    error("Cannot add wand to players inventory, it's already full.", 2)
   end
 end
 
