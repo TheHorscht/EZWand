@@ -1,0 +1,3 @@
+Add new way to add multiple spells: wand:AddSpells({ "BOMB", 5 }, "BULLET", { "BLACK_HOLE", 2 })
+FIX: Detaching spells increases capacity
+FIX: Constructor doesn't work when specifying entity_id number as string, e.g: EZWand("22")

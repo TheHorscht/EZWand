@@ -462,6 +462,9 @@ function wand:_RemoveSpells(action_ids, detach)
   for i,v in ipairs(which) do
     if action_ids == nil or table.contains(action_ids, v.action_id) then
       EntityRemoveFromParent(v.entity_id)
+      if detach then
+        self.capacity = self.capacity - 1
+      end
     end
   end
 end
