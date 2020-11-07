@@ -241,7 +241,7 @@ function wand:new(from, rng_seed_x, rng_seed_y)
     o:SetProperties(props)
     o:RemoveSpells()
     o:DetachSpells()
-  elseif type(from) == "number" then
+  elseif tonumber(from) or type(from) == "number" then
     -- Wrap an existing wand
     protected.entity_id = from
     protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
