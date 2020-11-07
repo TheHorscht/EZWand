@@ -58,9 +58,13 @@ props = wand:GetProperties({"manaMax", "capacity"}) -- Gets some
 wand:AddSpells("BULLET")
 -- Multiple
 wand:AddSpells("BULLET", "BULLET", "BLACK_HOLE")
--- Or from table
+-- From table
 local spells_to_add = { "BULLET", "BULLET", "BLACK_HOLE" }
 wand:AddSpells(spells_to_add)
+-- Or add multiple like this, which will result in 1 bomb followed by 3 bullets and then 1 black hole:
+wand:AddSpells("BOMB", { "BULLET", 3 }, "BLACK_HOLE")
+-- This also works with when passing in a table
+
 -- To add always cast spells, simply use the same syntax
 -- but with wand:AttachSpells instead
 wand:AttachSpells("BLACK_HOLE")

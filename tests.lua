@@ -158,6 +158,16 @@ function test_AddSpells(wand)
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 6)
   assert(attached_spells_count == 8)
+--wand:AddSpells("BOMB")
+--wand:AddSpells({"BOMB", 5})
+--wand:AddSpells("BULLET", {"BOMB", 5})
+--wand:AddSpells({"BOMB", 5}, "BULLET")
+--wand:AddSpells({"BOMB", 2}, {"BULLET", 5})
+
+-- These should error out
+--wand:AddSpells{2, {}, {"BULLET", 5}}
+--wand:AddSpells{{"BOMB", 2}, {}, {"BULLET", 5}}
+
 end
 
 function test_GetSpellsCount(wand)

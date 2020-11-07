@@ -358,28 +358,47 @@ function wand:_AddSpells(spells, attach)
     end
   end
 end
+local function extract_spells_from_vararg(...)
+  local spells = {}
+  local spell_args = ...
+  if select("#", ...) > 1 or type(spell_args) ~= "table" or (type(spell_args) == "table" and #spell_args == 2 and type(spell_args[1]) == "string" and type(spell_args[2]) == "number") then
+    spell_args = {...}
+  end
+  local function add_spell(i, spell_id)
+    if type(spell_id) == "string" then
+      table.insert(spells, spell_id)
+    else
+      error("Spell ID at index " .. i .. " has the wrong format, string or table with amount { \"BOMB\", 3 } expeced.", 4)
+    end
+  end
+  for i, spell in ipairs(spell_args) do
+    if type(spell) == "table" then
+      if #spell ~= 2 then
+        error("Wrong argument format at index " .. i .. ". Expected format for multiple spells shortcut: { \"BOMB\", 3 }", 3)
+      end
+      for i2=1, spell[2] do
+        add_spell(i, spell[1])
+      end
+    else
+      add_spell(i, spell)
+    end
+  end
+  return spells
+end
 -- Input can be a table of action_ids, or multiple arguments
 -- e.g.:
 -- AddSpells("BLACK_HOLE")
 -- AddSpells("BLACK_HOLE", "BLACK_HOLE", "BLACK_HOLE")
 -- AddSpells({"BLACK_HOLE", "BLACK_HOLE"})
+-- To add multiple spells you can also use this shortcut:
+-- AddSpells("BLACK_HOLE", {"BOMB", 5}) this will add 1 blackhole followed by 5 bombs
 function wand:AddSpells(...)
-  local spells
-  if type(...) ~= "table" then
-    spells = {...}
-  else
-    spells = ...
-  end
+  local spells = extract_spells_from_vararg(...)
   self:_AddSpells(spells, false)
 end
 -- Same as AddSpells but permanently attach the spells
 function wand:AttachSpells(...)
-  local spells
-  if type(...) ~= "table" then
-    spells = {...}
-  else
-    spells = ...
-  end
+  local spells = extract_spells_from_vararg(...)
   self:_AddSpells(spells, true)
 end
 -- Returns: spells_count, always_cast_spells_count
