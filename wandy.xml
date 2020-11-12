@@ -290,7 +290,6 @@
     script_damage_received="" 
     script_death="" 
     script_electricity_receiver_switched="" 
-    script_ingested_material="" 
     script_inhaled_material="" 
     script_item_picked_up="data/scripts/particles/wand_pickup.lua" 
     script_material_area_checker_failed="" 

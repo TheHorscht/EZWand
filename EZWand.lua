@@ -1,6 +1,6 @@
--- ########################################
--- #######   EZWand version UNRELEASED   #######
--- ########################################
+-- #########################################
+-- #######   EZWand version v1.0.2   #######
+-- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
 dofile_once("data/scripts/lib/utilities.lua")
@@ -294,7 +294,14 @@ function wand:_SetProperty(key, value)
   -- We need a special rule for capacity, since always cast spells count towards capacity, but not in the UI...
   if key == "capacity" then
     -- TODO: set capacity to value + numalwayscastspells
-    value = value + select(2, self:GetSpellsCount())
+    local spells, attached_spells = self:GetSpells()
+    value = value + #attached_spells
+    -- If capacity is getting reduced, remove any spells that don't fit anymore
+    local spells_to_remove = {}
+    for i=#spells-1, value, -1 do
+      table.insert(spells_to_remove, { spells[i].action_id, 1 })
+    end
+    self:RemoveSpells(spells_to_remove)
   end
   target_setters[variable_mappings[key].target](mapped_key, tostring(value))
 end
@@ -344,6 +351,7 @@ function wand:GetProperties(keys)
 end
 -- For making the interface nicer, this allows us to use this one function here for
 function wand:_AddSpells(spells, attach)
+  spells = spells or {}
   -- Check if capacity is sufficient
   if not attach and self:GetSpellsCount() + #spells > tonumber(self.capacity) then
     error("Wand capacity too low to add that many spells.", 3)
@@ -359,13 +367,18 @@ function wand:_AddSpells(spells, attach)
   end
 end
 local function extract_spells_from_vararg(...)
-  local spells = {}
+  local spells
   local spell_args = ...
   if select("#", ...) > 1 or type(spell_args) ~= "table" or (type(spell_args) == "table" and #spell_args == 2 and type(spell_args[1]) == "string" and type(spell_args[2]) == "number") then
     spell_args = {...}
+    -- Catch extract_spells_from_vararg("BOMB", 3), and turn spell_args into {{"BOMB", 3}}
+    if #spell_args == 2 and type(spell_args[1]) == "string" and type(spell_args[2]) == "number" then
+      spell_args = {spell_args}
+    end
   end
   local function add_spell(i, spell_id)
     if type(spell_id) == "string" then
+      spells = spells or {}
       table.insert(spells, spell_id)
     else
       error("Spell ID at index " .. i .. " has the wrong format, string or table with amount { \"BOMB\", 3 } expeced.", 4)
@@ -457,6 +470,8 @@ function wand:GetSpells()
 end
 
 function wand:_RemoveSpells(action_ids, detach)
+  dofile_once("data/scripts/lib/utilities.lua")
+  debug_print_table(action_ids)
 	local spells, attached_spells = self:GetSpells()
   local which = detach and attached_spells or spells
   for i,v in ipairs(which) do
@@ -470,28 +485,13 @@ function wand:_RemoveSpells(action_ids, detach)
 end
 -- action_ids = {"BLACK_HOLE", "GRENADE"} remove all spells of those types
 -- If action_ids is empty, remove all spells
+-- If entry is in the form of {"BLACK_HOLE", 2}, only remove 2 instances of black hole
 function wand:RemoveSpells(...)
-  local args = {...}
-  local spells
-  if #args == 0 then
-    spells = nil
-  elseif type(args[1]) == "table" then
-    spells = ...
-  else
-    spells = { ... }
-  end
+  local spells = extract_spells_from_vararg(...)
   self:_RemoveSpells(spells, false)
 end
 function wand:DetachSpells(...)
-  local args = {...}
-  local spells
-  if #args == 0 then
-    spells = nil
-  elseif type(args[1]) == "table" then
-    spells = ...
-  else
-    spells = { ... }
-  end
+  local spells = extract_spells_from_vararg(...)
   self:_RemoveSpells(spells, true)
 end
 

@@ -74,7 +74,7 @@ function test_constructors()
   test_Everything(wand)
   EntityKill(wand.entity_id)
 
-  wand = Wand("data/ws/EZWand/wandy.xml")
+  wand = Wand("data/hax/EZWand/wandy.xml")
   assert(wand.entity_id ~= nil)
   assert(wand.ability_component ~= nil)
   test_Everything(wand)
