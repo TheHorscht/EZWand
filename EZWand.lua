@@ -560,7 +560,7 @@ function wand:PutInPlayersInventory()
   -- Get number of wands currently already in inventory
   local count = 0
   local inventory_items = EntityGetAllChildren(inventory_id)
-  if inventory_items ~= nil then
+  if inventory_items then
     for i,v in ipairs(inventory_items) do
       if entity_is_wand(v) then
         count = count + 1
@@ -568,12 +568,19 @@ function wand:PutInPlayersInventory()
     end
   end
   if count < 4 then
-    -- local item_components = EntityGetComponent(rawget(self, "_protected").entity_id, "ItemComponent")
-    local item_components = EntityGetComponent(self.entity_id, "ItemComponent")
-    if item_components ~= nil and item_components[1] ~= nil then
-      ComponentSetValue(item_components[1], "play_hover_animation", "0")
-      ComponentSetValue(item_components[1], "has_been_picked_by_player", "1")
+    local item_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "ItemComponent")
+    if item_component then
+      ComponentSetValue2(item_component, "has_been_picked_by_player", true)
     end
+
+    EntitySetComponentsWithTagEnabled(self.entity_id, "enabled_in_world", false)
+    EntitySetComponentsWithTagEnabled(self.entity_id, "enabled_in_inventory", true)
+
+    local sprite_particle_emitter_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteParticleEmitterComponent")
+    if sprite_particle_emitter_comp then
+      EntitySetComponentIsEnabled(self.entity_id, sprite_particle_emitter_comp, false)
+    end
+
     EntityAddChild(inventory_id, self.entity_id)
   else
     error("Cannot add wand to players inventory, it's already full.", 2)

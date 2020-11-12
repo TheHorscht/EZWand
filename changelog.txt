@@ -1,3 +1,4 @@
 Add new way to add multiple spells: wand:AddSpells({ "BOMB", 5 }, "BULLET", { "BLACK_HOLE", 2 })
+FIX: PutInPlayersInventory not disabling/enabling the components correctly (wand keeps spinning in hand etc)
 FIX: Detaching spells increases capacity
 FIX: Constructor doesn't work when specifying entity_id number as string, e.g: EZWand("22")
