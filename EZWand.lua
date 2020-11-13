@@ -260,7 +260,7 @@ function wand:_SetProperty(key, value)
     value = value + #attached_spells
     -- If capacity is getting reduced, remove any spells that don't fit anymore
     local spells_to_remove = {}
-    for i=#spells-1, value, -1 do
+    for i=#spells, value+1, -1 do
       table.insert(spells_to_remove, { spells[i].action_id, 1 })
     end
     if #spells_to_remove > 0 then
@@ -443,6 +443,8 @@ function wand:GetSpells()
 			end
 		end
   end
+  table.sort(always_cast_spells, function(a, b) return a.inventory_x < b.inventory_x end)
+  table.sort(spells, function(a, b) return a.inventory_x < b.inventory_x end)
 	return spells, always_cast_spells
 end
 

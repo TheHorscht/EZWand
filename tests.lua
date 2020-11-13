@@ -262,9 +262,14 @@ function test_GetSpells(wand)
   wand:DetachSpells()
   wand:AttachSpells(to_attach)
   spells, attached_spells = wand:GetSpells()
-  for i,v in ipairs(to_attach) do
-    assert(v == attached_spells[i].action_id)
+  assert(#to_attach == #attached_spells)
+  local attached_spell_ids = {}
+  for i,v in ipairs(attached_spells) do
+    table.insert(attached_spell_ids, v.action_id)
   end
+  table.sort(attached_spell_ids)
+  table.sort(to_attach)
+  assert(equals(attached_spell_ids, to_attach))
 end
 
 -- Oh boy this is one CHUNKY test function that could use some refactoring but whatever
