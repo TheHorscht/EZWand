@@ -263,7 +263,9 @@ function wand:_SetProperty(key, value)
     for i=#spells-1, value, -1 do
       table.insert(spells_to_remove, { spells[i].action_id, 1 })
     end
-    self:RemoveSpells(spells_to_remove)
+    if #spells_to_remove > 0 then
+      self:RemoveSpells(spells_to_remove)
+    end
   end
   target_setters[variable_mappings[key].target](mapped_key, value)
 end
@@ -312,10 +314,14 @@ function wand:GetProperties(keys)
 end
 -- For making the interface nicer, this allows us to use this one function here for
 function wand:_AddSpells(spells, attach)
-  spells = spells or {}
+  local spells_on_wand = self:GetSpells()
   -- Check if capacity is sufficient
-  if not attach and self:GetSpellsCount() + #spells > tonumber(self.capacity) then
-    error("Wand capacity too low to add that many spells.", 3)
+  local count = 0
+  for i, v in ipairs(spells) do
+    count = count + v[2]
+  end
+  if not attach and #spells_on_wand + count > self.capacity then
+    error(string.format("Wand capacity (%d/%d) cannot fit %d more spells. ", #spells_on_wand, self.capacity, count), 3)
   end
   for i,spell in ipairs(spells) do
     for i2=1, spell[2] do

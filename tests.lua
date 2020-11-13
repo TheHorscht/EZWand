@@ -218,6 +218,10 @@ function test_AddSpells(wand)
   -- These should throw an error
   assert(throws(wand.AddSpells, wand, 2, {}, {"BULLET", 5}))
   assert(throws(wand.AddSpells, wand, {"BOMB", 2}, {}, {"BULLET", 5}))
+  -- Test that we can't surpass capacity
+  wand:RemoveSpells()
+  wand.capacity = 3
+  assert(throws(wand.AddSpells, wand, "BOMB", 4))
 end
 
 function test_GetSpellsCount(wand)
@@ -248,6 +252,7 @@ function test_GetSpells(wand)
   local to_add = { "BULLET", "BOUNCY_ORB", "BOUNCY_ORB", "BULLET", "BLACK_HOLE", "BULLET" }
   local to_attach = { "BLACK_HOLE", "BULLET", "BLACK_HOLE", "BULLET", "BLACK_HOLE", "BULLET" }
   wand:RemoveSpells()
+  wand.capacity = 10
   wand:AddSpells(to_add)
   spells, attached_spells = wand:GetSpells()
   for i,v in ipairs(to_add) do
@@ -340,13 +345,16 @@ function test_DetachSpells_does_not_reduce_capacity(wand)
   assert(wand.capacity == old_capacity)
 end
 
-function test_reducing_capacity_removes_spells(wand)
+function test_reducing_capacity_removes_excess_spells(wand)
   wand:RemoveSpells()
   wand.capacity = 20
   wand:AddSpells("BOMB", 20)
   wand.capacity = 15
   local spells = wand:GetSpells()
-  assert(#spells == 15)
+  assert(#spells == 15, #spells)
+  wand.capacity = 17
+  spells = wand:GetSpells()
+  assert(#spells == 15, #spells)
 end
 
 function test_Clone(wand)
@@ -390,7 +398,7 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_GetSpellsCount(wand)
   test_RemoveSpecificSpells(wand)
   test_Clone(wand)
-  test_reducing_capacity_removes_spells(wand)
+  test_reducing_capacity_removes_excess_spells(wand)
   test_DetachSpells_does_not_reduce_capacity(wand)
 end
 
