@@ -73,11 +73,14 @@ wand:AttachSpells("BLACK_HOLE")
 ```lua
 -- Remove all spells
 wand:RemoveSpells()
--- Remove all slotted BLACK_HOLE spells
+-- Remove one BLACK_HOLE spell
 wand:RemoveSpells("BLACK_HOLE")
+-- Remove two BLACK_HOLE spells
+wand:RemoveSpells("BLACK_HOLE", 2) or wand:RemoveSpells("BLACK_HOLE", "BLACK_HOLE")
+-- Remove all slotted BLACK_HOLE spells
+wand:RemoveSpells("BLACK_HOLE", -1)
 -- or with table version
-local spells_to_remove = { "BULLET", "BLACK_HOLE" }
-wand:RemoveSpells(spells_to_remove)
+wand:RemoveSpells({ "BULLET", "BLACK_HOLE" })
 -- Always cast spell version:
 wand:DetachSpells()
 ```

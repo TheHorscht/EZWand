@@ -356,45 +356,44 @@ function wand:_AddSpells(spells, attach)
   if not attach and self:GetSpellsCount() + #spells > tonumber(self.capacity) then
     error("Wand capacity too low to add that many spells.", 3)
   end
-  for i,action_id in ipairs(spells) do
-    if not attach then
-      AddGunAction(self.entity_id, action_id)
-    else
-      -- Extend slots to not consume one slot
-      -- self.capacity = self.capacity + 1
-      AddGunActionPermanent(self.entity_id, action_id)
+  for i,spell in ipairs(spells) do
+    for i2=1, spell[2] do
+      if not attach then
+        AddGunAction(self.entity_id, spell[1])
+      else
+        -- Extend slots to not consume one slot
+        -- self.capacity = self.capacity + 1
+        AddGunActionPermanent(self.entity_id, spell[1])
+      end
     end
   end
 end
-local function extract_spells_from_vararg(...)
-  local spells
-  local spell_args = ...
-  if select("#", ...) > 1 or type(spell_args) ~= "table" or (type(spell_args) == "table" and #spell_args == 2 and type(spell_args[1]) == "string" and type(spell_args[2]) == "number") then
-    spell_args = {...}
-    -- Catch extract_spells_from_vararg("BOMB", 3), and turn spell_args into {{"BOMB", 3}}
-    if #spell_args == 2 and type(spell_args[1]) == "string" and type(spell_args[2]) == "number" then
-      spell_args = {spell_args}
-    end
-  end
-  local function add_spell(i, spell_id)
-    if type(spell_id) == "string" then
-      spells = spells or {}
-      table.insert(spells, spell_id)
-    else
-      error("Spell ID at index " .. i .. " has the wrong format, string or table with amount { \"BOMB\", 3 } expeced.", 4)
-    end
-  end
-  for i, spell in ipairs(spell_args) do
-    if type(spell) == "table" then
-      if #spell ~= 2 then
+
+function extract_spells_from_vararg(...)
+  local spells = {}
+  local spell_args = select("#", ...) == 1 and type(...) == "table" and ... or {...}
+  local i = 1
+  while i <= #spell_args do
+    if type(spell_args[i]) == "table" then
+      -- Check for this syntax: { "BOMB", 1 }
+      if type(spell_args[i][1]) ~= "string" or type(spell_args[i][2]) ~= "number" then
         error("Wrong argument format at index " .. i .. ". Expected format for multiple spells shortcut: { \"BOMB\", 3 }", 3)
+      else
+        table.insert(spells, spell_args[i])
       end
-      for i2=1, spell[2] do
-        add_spell(i, spell[1])
+    elseif type(spell_args[i]) == "string" then
+      local amount = spell_args[i+1]
+      if type(amount) ~= "number" then
+        amount = 1
+        table.insert(spells, { spell_args[i], amount })
+      else
+        table.insert(spells, { spell_args[i], amount })
+        i = i + 1
       end
     else
-      add_spell(i, spell)
+      error("Wrong argument format.", 3)
     end
+    i = i + 1
   end
   return spells
 end
@@ -446,36 +445,40 @@ function wand:GetSpells()
 	for _, spell in ipairs(children) do
 		local action_id = nil
 		local permanent = false
-		local inventory_x = -1
     local item_action_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemActionComponent")
     if item_action_component then
       local val = ComponentGetValue2(item_action_component, "action_id")
       action_id = val
     end
+    local inventory_x, inventory_y = -1, -1
     local item_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemComponent")
     if item_component then
-      permanent = ComponentGetValue2(item_component, "permanently_attached")      
-      local inventory_y
+      permanent = ComponentGetValue2(item_component, "permanently_attached")
       inventory_x, inventory_y = ComponentGetValue2(item_component, "inventory_slot")
     end
-    if action_id ~= nil then
+    if action_id then
 			if permanent == true then
-				table.insert(always_cast_spells, { action_id = action_id, entity_id = spell, inventory_x = inventory_x })
+				table.insert(always_cast_spells, { action_id = action_id, entity_id = spell, inventory_x = inventory_x, inventory_y = inventory_y })
 			else
-				table.insert(spells, { action_id = action_id, entity_id = spell, inventory_x = inventory_x })
+				table.insert(spells, { action_id = action_id, entity_id = spell, inventory_x = inventory_x, inventory_y = inventory_y })
 			end
 		end
   end
 	return spells, always_cast_spells
 end
 
-function wand:_RemoveSpells(action_ids, detach)
-  dofile_once("data/scripts/lib/utilities.lua")
-  debug_print_table(action_ids)
+function wand:_RemoveSpells(spells_to_remove, detach)
 	local spells, attached_spells = self:GetSpells()
   local which = detach and attached_spells or spells
-  for i,v in ipairs(which) do
-    if action_ids == nil or table.contains(action_ids, v.action_id) then
+  local spells_to_remove_remaining = {}
+  for _, spell in ipairs(spells_to_remove) do
+    spells_to_remove_remaining[spell[1]] = (spells_to_remove_remaining[spell[1]] or 0) + spell[2]
+  end
+  for i, v in ipairs(which) do
+    if #spells_to_remove == 0 or spells_to_remove_remaining[v.action_id] and spells_to_remove_remaining[v.action_id] ~= 0 then
+      if #spells_to_remove > 0 then
+        spells_to_remove_remaining[v.action_id] = spells_to_remove_remaining[v.action_id] - 1
+      end
       EntityRemoveFromParent(v.entity_id)
       if detach then
         self.capacity = self.capacity - 1

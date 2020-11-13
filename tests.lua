@@ -6,6 +6,52 @@
 
 Wand = EZWand
 
+local function table_count_occurences(table)
+  local out = {}
+  for i,v in ipairs(table) do
+    out[v.action_id] = (out[v.action_id] or 0) + 1
+  end
+  return out
+end
+
+-- Compares two tables
+function equals(o1, o2, ignore_mt)
+  if o1 == o2 then return true end
+  local o1Type = type(o1)
+  local o2Type = type(o2)
+  if o1Type ~= o2Type then return false end
+  if o1Type ~= 'table' then return false end
+
+  if not ignore_mt then
+      local mt1 = getmetatable(o1)
+      if mt1 and mt1.__eq then
+          --compare using built in method
+          return o1 == o2
+      end
+  end
+
+  local keySet = {}
+
+  for key1, value1 in pairs(o1) do
+      local value2 = o2[key1]
+      if value2 == nil or equals(value1, value2, ignore_mt) == false then
+          return false
+      end
+      keySet[key1] = true
+  end
+
+  for key2, _ in pairs(o2) do
+      if not keySet[key2] then return false end
+  end
+  return true
+end
+
+-- Test if a function throws an error
+function throws(func, ...)
+  local success, err = pcall(func, ...)
+  return not success
+end
+
 local function GetHotspotComponent(entity_id)
   local comps = EntityGetAllComponents(entity_id)
   for i,v in ipairs(comps) do
@@ -158,16 +204,20 @@ function test_AddSpells(wand)
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 6)
   assert(attached_spells_count == 8)
---wand:AddSpells("BOMB")
---wand:AddSpells({"BOMB", 5})
---wand:AddSpells("BULLET", {"BOMB", 5})
---wand:AddSpells({"BOMB", 5}, "BULLET")
---wand:AddSpells({"BOMB", 2}, {"BULLET", 5})
-
--- These should error out
---wand:AddSpells{2, {}, {"BULLET", 5}}
---wand:AddSpells{{"BOMB", 2}, {}, {"BULLET", 5}}
-
+  wand:RemoveSpells()
+  wand:DetachSpells()
+  wand:AddSpells("BULLET", 3, "BLACK_HOLE", 2)
+  wand:AttachSpells("BULLET", 3, "BLACK_HOLE", 2)
+  local spells, attached_spells = wand:GetSpells()
+  local occurences = table_count_occurences(spells)
+  assert(occurences["BULLET"] == 3)
+  assert(occurences["BLACK_HOLE"] == 2)
+  occurences = table_count_occurences(attached_spells)
+  assert(occurences["BULLET"] == 3)
+  assert(occurences["BLACK_HOLE"] == 2)
+  -- These should throw an error
+  assert(throws(wand.AddSpells, wand, 2, {}, {"BULLET", 5}))
+  assert(throws(wand.AddSpells, wand, {"BOMB", 2}, {}, {"BULLET", 5}))
 end
 
 function test_GetSpellsCount(wand)
@@ -212,70 +262,74 @@ function test_GetSpells(wand)
   end
 end
 
-local function table_count_occurences(table)
-  local out = {}
-  for i,v in ipairs(table) do
-    out[v.action_id] = (out[v.action_id] or 0) + 1
-  end
-  return out
-end
 -- Oh boy this is one CHUNKY test function that could use some refactoring but whatever
 function test_RemoveSpecificSpells(wand)
-  local test_spells = { "BURST_2", "BURST_3", "Y_SHAPE", "CIRCLE_SHAPE", "FLY_DOWNWARDS" }
-  local spells_count, attached_spells_count
   wand:RemoveSpells()
   wand:DetachSpells()
-  wand:AddSpells{ test_spells[1], test_spells[1], test_spells[3], test_spells[3], test_spells[4], test_spells[4], test_spells[5], }
-  -- Test single spell removal, both syntaxes
-  wand:RemoveSpells{ test_spells[3] }
-  wand:RemoveSpells( test_spells[4] )
-  -- Double checking can't hurt!
-  spells_count, attached_spells_count = wand:GetSpellsCount()
-  assert(spells_count == 3)
+  wand:AddSpells("BOMB", 5, "BULLET", 3)
+  -- Test single spell removal, with vararg and table syntax
+  wand:RemoveSpells{"BOMB", 2}
+  wand:RemoveSpells("BULLET", 1)
   local spells, attached_spells = wand:GetSpells()
-  assert(#spells == 3)
+  assert(#spells == 5)
   -- Order is not guaranteed and hard to test without inventory_pos.x working so we just test like so
   local occurences = table_count_occurences(spells)
-  assert(occurences[test_spells[1]] == 2)
-  assert(occurences[test_spells[5]] == 1)
+  assert(occurences["BOMB"] == 3)
+  assert(occurences["BULLET"] == 2)
   -- Next test, this time DetachSpells
   wand:RemoveSpells()
   wand:DetachSpells()
-  wand:AttachSpells{ test_spells[1], test_spells[1], test_spells[3], test_spells[3], test_spells[4], test_spells[4], test_spells[5], }
-  wand:DetachSpells{ test_spells[3] }
-  wand:DetachSpells( test_spells[4] )
-  spells_count, attached_spells_count = wand:GetSpellsCount()
-  assert(attached_spells_count == 3)
+  wand:AttachSpells("BOMB", 5, "BULLET", 3)
+  wand:DetachSpells{"BOMB", 2}
+  wand:DetachSpells("BULLET", 1)
   spells, attached_spells = wand:GetSpells()
-  assert(#attached_spells == 3)
+  assert(#attached_spells == 5)
   occurences = table_count_occurences(attached_spells)
-  assert(occurences[test_spells[1]] == 2)
-  assert(occurences[test_spells[5]] == 1)
-  -- All of the above again, this time test if multile spells can be removed with 1 call
+  assert(occurences["BOMB"] == 3)
+  assert(occurences["BULLET"] == 2)
+  -- All of the above again, this time test if multiple spells can be removed with 1 call
   wand:RemoveSpells()
   wand:DetachSpells()
-  wand:AddSpells{ test_spells[1], test_spells[1], test_spells[3], test_spells[2], test_spells[4], test_spells[2], test_spells[5], }
-  -- Test multi spell removal, both syntaxes
-  wand:RemoveSpells{ test_spells[2], test_spells[3] }
-  wand:RemoveSpells( test_spells[4], test_spells[5] )
-  spells_count, attached_spells_count = wand:GetSpellsCount()
-  assert(spells_count == 2)
+  wand:AddSpells("BOMB", 5, "BULLET", 3)
+  -- Test single spell removal, with vararg and table syntax
+  wand:RemoveSpells{"BOMB", 1, "BULLET", 1}
+  wand:RemoveSpells("BOMB", 1, "BULLET", 1)
+  local spells, attached_spells = wand:GetSpells()
+  assert(#spells == 4)
+  -- Order is not guaranteed and hard to test without inventory_pos.x working so we just test like so
+  local occurences = table_count_occurences(spells)
+  assert(occurences["BOMB"] == 3)
+  assert(occurences["BULLET"] == 1)
+  -- Next test, this time DetachSpells
+  wand:RemoveSpells()
+  wand:DetachSpells()
+  wand:AttachSpells("BOMB", 5, "BULLET", 3)
+  wand:DetachSpells{"BOMB", 1, "BULLET", 1}
+  wand:DetachSpells("BOMB", 1, "BULLET", 1)
   spells, attached_spells = wand:GetSpells()
-  assert(#spells == 2)
+  assert(#attached_spells == 4)
+  occurences = table_count_occurences(attached_spells)
+  assert(occurences["BOMB"] == 3)
+  assert(occurences["BULLET"] == 1)
+  -- Test if remove all syntax works
+  wand:RemoveSpells()
+  wand:DetachSpells()
+  wand:AddSpells("BOMB", 5, "BULLET", 3)
+  wand:RemoveSpells("BOMB", -1)
+  spells, attached_spells = wand:GetSpells()
+  assert(#spells == 3)
   occurences = table_count_occurences(spells)
-  assert(occurences[test_spells[1]] == 2)
-  -- Next test, this time DetachSpells
+  assert(occurences["BOMB"] == nil)
+  assert(occurences["BULLET"] == 3)
+  -- Test if using the same spell twice works
   wand:RemoveSpells()
   wand:DetachSpells()
-  wand:AttachSpells{ test_spells[1], test_spells[1], test_spells[3], test_spells[2], test_spells[4], test_spells[2], test_spells[5], }
-  wand:DetachSpells{ test_spells[2], test_spells[3] }
-  wand:DetachSpells( test_spells[4], test_spells[5] )
-  spells_count, attached_spells_count = wand:GetSpellsCount()
-  assert(attached_spells_count == 2)
+  wand:AddSpells("BOMB", 3)
+  wand:RemoveSpells("BOMB", "BOMB")
   spells, attached_spells = wand:GetSpells()
-  assert(#attached_spells == 2)
-  occurences = table_count_occurences(attached_spells)
-  assert(occurences[test_spells[1]] == 2)
+  assert(#spells == 1)
+  occurences = table_count_occurences(spells)
+  assert(occurences["BOMB"] == 1)
 end
 
 function test_Clone(wand)
@@ -321,7 +375,26 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_Clone(wand)
 end
 
+function test_extract_spells_from_vararg()
+  assert(equals(extract_spells_from_vararg("BOMB"),                    { { "BOMB", 1 } }   ))
+  assert(equals(extract_spells_from_vararg("BOMB", 1),                 { { "BOMB", 1 } }   ))
+  assert(equals(extract_spells_from_vararg({ "BOMB", 1 }),             { { "BOMB", 1 } }   ))
+  assert(equals(extract_spells_from_vararg("BOMB", "WHAT"),            { { "BOMB", 1 }, { "WHAT", 1 } }   ))
+  assert(equals(extract_spells_from_vararg("BOMB", 5, "WHAT"),         { { "BOMB", 5 }, { "WHAT", 1 } }   ))
+  assert(equals(extract_spells_from_vararg("BOMB", 5, "WHAT", 3),      { { "BOMB", 5 }, { "WHAT", 3 } }   ))
+  assert(equals(extract_spells_from_vararg("BOMB", "WHAT", 3),         { { "BOMB", 1 }, { "WHAT", 3 } }   ))
+  assert(equals(extract_spells_from_vararg("BOMB", { "WHAT", 3 } ),    { { "BOMB", 1 }, { "WHAT", 3 } }   ))
+  assert(equals(extract_spells_from_vararg({}),               {}                  ))
+  assert(equals(extract_spells_from_vararg(),                 {}                  ))
+  assert(throws(extract_spells_from_vararg, {}, 5))
+  assert(throws(extract_spells_from_vararg, 5))
+  assert(throws(extract_spells_from_vararg, false))
+  assert(throws(extract_spells_from_vararg, true))
+  assert(throws(extract_spells_from_vararg, { true }))
+end
+
 function run_wand_tests()
   test_constructors()
+  test_extract_spells_from_vararg()
   print("All tests passed!")
 end

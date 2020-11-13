@@ -1,4 +1,5 @@
 - When reducing capacity, remove spells that don't fit onto it anymore
+- Properly add inventory_slot.x when adding new spells
 
 - Test that detach spells does not change capacity
 - Update functions for 1.0
