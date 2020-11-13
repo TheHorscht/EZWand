@@ -328,7 +328,7 @@ function wand:_AddSpells(spells, attach)
   if not attach and #spells_on_wand + count > self.capacity then
     error(string.format("Wand capacity (%d/%d) cannot fit %d more spells. ", #spells_on_wand, self.capacity, count), 3)
   end
-  local current_position = 1
+  local current_position = 0
   for i,spell in ipairs(spells) do
     for i2=1, spell[2] do
       if not attach then
@@ -460,7 +460,9 @@ function wand:_RemoveSpells(spells_to_remove, detach)
       if #spells_to_remove > 0 then
         spells_to_remove_remaining[v.action_id] = spells_to_remove_remaining[v.action_id] - 1
       end
+      -- This needs to happen because EntityKill takes one frame to take effect or something
       EntityRemoveFromParent(v.entity_id)
+      EntityKill(v.entity_id)
       if detach then
         self.capacity = self.capacity - 1
       end
@@ -477,6 +479,22 @@ end
 function wand:DetachSpells(...)
   local spells = extract_spells_from_vararg(...)
   self:_RemoveSpells(spells, true)
+end
+
+function wand:RemoveSpellAtIndex(index)
+  if index+1 > self.capacity then
+    return false, "index is bigger than capacity"
+  end
+  local spells = self:GetSpells()
+  for i, spell in ipairs(spells) do
+    if spell.inventory_x == index then
+      -- This needs to happen because EntityKill takes one frame to take effect or something
+      EntityRemoveFromParent(spell.entity_id)
+      EntityKill(spell.entity_id)
+      return true
+    end
+  end
+  return false, "index at " .. index .. " does not contain a spell"
 end
 
 -- Make it impossible to edit the wand

@@ -85,6 +85,8 @@ wand:RemoveSpells("BLACK_HOLE", -1)
 wand:RemoveSpells({ "BULLET", "BLACK_HOLE" })
 -- Always cast spell version:
 wand:DetachSpells()
+-- Remove a spell at a certain position:
+local success, error_msg = wand:RemoveSpellAtIndex(index)
 ```
 ### Getting spells and spell count
 ```lua

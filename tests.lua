@@ -6,6 +6,14 @@
 
 Wand = EZWand
 
+function table.ipairsmap(t, func)
+  local out = {}
+  for i, v in ipairs(t) do
+    out[i] = func(v)
+  end
+  return out
+end
+
 local function table_count_occurences(table)
   local out = {}
   for i,v in ipairs(table) do
@@ -342,6 +350,32 @@ function test_RemoveSpecificSpells(wand)
   assert(occurences["BOMB"] == 1)
 end
 
+function test_RemoveSpellAtIndex(wand)
+  wand.capacity = 5
+  wand:RemoveSpells()
+  wand:AddSpells("BOMB", "BULLET", "BLACK_HOLE")
+  local success = wand:RemoveSpellAtIndex(0)
+  local spells = table.ipairsmap(wand:GetSpells(), function(v) return v.action_id end)
+  assert(success)
+  assert(equals(spells, { "BULLET", "BLACK_HOLE" }))
+
+  wand:RemoveSpells()
+  wand:AddSpells("BOMB", "BULLET", "BLACK_HOLE")
+  local success = wand:RemoveSpellAtIndex(1)
+  local spells = table.ipairsmap(wand:GetSpells(), function(v) return v.action_id end)
+  assert(success)
+  assert(equals(spells, { "BOMB", "BLACK_HOLE" }))
+
+  local success, err = wand:RemoveSpellAtIndex(6)
+  assert(success == false)
+  assert(type(err) == "string")
+  
+  -- Test if it returns an error correctly when trying to remove at index that doesn't have a spell
+  local success, err = wand:RemoveSpellAtIndex(1)
+  assert(success == false)
+  assert(type(err) == "string")
+end
+
 function test_DetachSpells_does_not_reduce_capacity(wand)
   wand:DetachSpells()
   wand:AttachSpells("BULLET", 5)
@@ -405,6 +439,7 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_Clone(wand)
   test_reducing_capacity_removes_excess_spells(wand)
   test_DetachSpells_does_not_reduce_capacity(wand)
+  test_RemoveSpellAtIndex(wand)
 end
 
 function test_extract_spells_from_vararg()
