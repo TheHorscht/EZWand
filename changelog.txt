@@ -1,3 +1,6 @@
+v1.1.1:
+- FIX UpdateSprite throwing an error
+
 v1.1.0:
 - AddSpells() now places the spells at the next free position on the wand and sets their position correctly
 - GetSpells() now returns the spells in the order the appear on the wand (if the order has been set)

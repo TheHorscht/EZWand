@@ -563,7 +563,7 @@ function wand:UpdateSprite()
   local gun = {
     fire_rate_wait = self.castDelay,
     actions_per_round = self.spellsPerCast,
-    shuffle_deck_when_empty = self.shuffle,
+    shuffle_deck_when_empty = self.shuffle and 1 or 0,
     deck_capacity = self.capacity,
     spread_degrees = self.spread,
     reload_time = self.rechargeTime,
