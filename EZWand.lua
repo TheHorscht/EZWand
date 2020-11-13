@@ -142,7 +142,7 @@ end
 
 -- Returns true if entity is a wand
 local function entity_is_wand(entity_id)
-	local comp = EntityGetComponent(entity_id, "ManaReloaderComponent")
+	local comp = EntityGetComponentIncludingDisabled(entity_id, "ManaReloaderComponent")
 	return comp ~= nil
 end
 
@@ -157,48 +157,6 @@ local function validate_property(name, value)
   if value ~= nil then
     -- check if value has the correct format etc for key
   end
-end
-
-local function SetWandSprite(entity_id, item_file, offset_x, offset_y, tip_x, tip_y)
-  local ability_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "AbilityComponent")
-	if ability_comp then
-    ComponentSetValue2(ability_comp, "sprite_file", item_file)
-	end
-  local function GetComponentValues(comp, value_names)
-    local values_out = {}
-    for i, value_name in ipairs(value_names) do
-      values_out[value_name] = ComponentGetValue(comp, value_name)
-    end
-    return values_out
-  end
-  local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
-  if sprite_comp then
-    ComponentSetValue2(sprite_comp, "image_file", item_file)
-    ComponentSetValue2(sprite_comp, "offset_x", offset_x)
-    ComponentSetValue2(sprite_comp, "offset_y", offset_y)
-    EntityRefreshSprite(entity_id, sprite_comp)
-	end
-	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "HotspotComponent", "shoot_pos")
-  if hotspot_comp then
-    ComponentSetValue2(hotspot_comp, "offset", tip_x, tip_y)
-	end	
-end
-
-local function GetWandSprite(entity_id, ability_comp)
-  local item_file, offset_x, offset_y, tip_x, tip_y
-	if ability_comp ~= nil then
-		item_file = ComponentGetValue2(ability_comp, "sprite_file")
-	end
-	local sprite_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "SpriteComponent", "item")
-	if sprite_comp ~= nil then
-		offset_x = ComponentGetValue2(sprite_comp, "offset_x")
-    offset_y = ComponentGetValue2(sprite_comp, "offset_y")
-	end
-	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(entity_id, "HotspotComponent", "shoot_pos")
-  if hotspot_comp ~= nil then
-    tip_x, tip_y = ComponentGetValue2(hotspot_comp, "offset")
-  end
-  return item_file, offset_x, offset_y, tip_x, tip_y
 end
 
 -- ##########################
@@ -498,6 +456,42 @@ function wand:DetachSpells(...)
   self:_RemoveSpells(spells, true)
 end
 
+function wand:SetSprite(item_file, offset_x, offset_y, tip_x, tip_y)
+  local ability_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "AbilityComponent")
+	if ability_comp then
+    ComponentSetValue2(ability_comp, "sprite_file", item_file)
+	end
+  local sprite_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteComponent", "item")
+  if sprite_comp then
+    ComponentSetValue2(sprite_comp, "image_file", item_file)
+    ComponentSetValue2(sprite_comp, "offset_x", offset_x)
+    ComponentSetValue2(sprite_comp, "offset_y", offset_y)
+    EntityRefreshSprite(self.entity_id, sprite_comp)
+	end
+	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "HotspotComponent", "shoot_pos")
+  if hotspot_comp then
+    ComponentSetValue2(hotspot_comp, "offset", tip_x, tip_y)
+	end
+end
+
+function wand:GetSprite()
+  local ability_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "AbilityComponent")
+  local item_file, offset_x, offset_y, tip_x, tip_y
+	if ability_comp then
+		item_file = ComponentGetValue2(ability_comp, "sprite_file")
+	end
+	local sprite_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteComponent", "item")
+	if sprite_comp then
+		offset_x = ComponentGetValue2(sprite_comp, "offset_x")
+    offset_y = ComponentGetValue2(sprite_comp, "offset_y")
+	end
+	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "HotspotComponent", "shoot_pos")
+  if hotspot_comp then
+    tip_x, tip_y = ComponentGetValue2(hotspot_comp, "offset")
+  end
+  return item_file, offset_x, offset_y, tip_x, tip_y
+end
+
 function wand:Clone()
   local new_wand = wand:new(self:GetProperties())
   local spells, attached_spells = self:GetSpells()
@@ -508,7 +502,7 @@ function wand:Clone()
     new_wand:AttachSpells{v.action_id}
   end
   -- TODO: Make this work if sprite_file is an xml
-  SetWandSprite(new_wand.entity_id, GetWandSprite(self.entity_id, self.ability_component))
+  new_wand:SetSprite(self:GetSprite())
   return new_wand
 end
 
@@ -523,8 +517,7 @@ function wand:UpdateSprite()
     reload_time = self.rechargeTime,
   }
   local sprite_data = GetWand(gun)
-  SetWandSprite(self.entity_id, 
-    sprite_data.file, sprite_data.grip_x, sprite_data.grip_y,
+  self:SetSprite(sprite_data.file, sprite_data.grip_x, sprite_data.grip_y,
     (sprite_data.tip_x - sprite_data.grip_x),
     (sprite_data.tip_y - sprite_data.grip_y))
 end

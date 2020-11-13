@@ -1,3 +1,4 @@
+Add SetSprite() and GetSprite()
 Add new ways to add multiple spells.
 CHANGE: RemoveSpells now allows removing only one instance of a spell
 FIX: PutInPlayersInventory not disabling/enabling the components correctly (wand keeps spinning in hand etc)

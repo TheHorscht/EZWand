@@ -118,6 +118,8 @@ wand:UpdateSprite()
 -- re-enables ray particles etc
 wand:PlaceAt(x, y)
 wand:PutInPlayersInventory()
+wand:SetSprite(image_file, offset_x, offset_y, tip_x, tip_y)
+local image_file, offset_x, offset_y, tip_x, tip_y = wand:GetSprite()
 ```
 ***
 Naming convention for the functions is Add/Remove for regular spells and Attach/Detach for always cast spells.
