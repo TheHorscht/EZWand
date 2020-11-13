@@ -11,94 +11,112 @@ dofile_once("data/scripts/gun/procedural/gun_procedural.lua")
 -- ####       UTILS      ####
 -- ##########################
 
+local function test_conditionals(conditions)
+  for i, conditon in ipairs(conditions) do
+    if not conditon[1] then
+      return false, conditon[2]
+    end
+  end
+  return true
+end
+
 wand_props = {
   shuffle = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "shuffle needs to be 1 or 0"
-      assert(type(v) == "number", err)
-      assert(v == 0 or v == 1, err)
+      return test_conditionals{
+        { type(val) == "boolean", "shuffle must be true or false" }
+      }
     end,
-    default = 0,
+    default = false,
   },
   spellsPerCast = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "spellsPerCast needs to be a number > 0"
-      assert(type(v) == "number", err)
-      assert(v > 0, err)
+      return test_conditionals{
+        { type(val) == "number", "spellsPerCast must be a number" },
+        { val > 0, "spellsPerCast must be a number > 0" },
+      }
     end,
     default = 1,
   },
   castDelay = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "castDelay needs to be a number"
-      assert(type(v) == "number", err)
+      return test_conditionals{
+        { type(val) == "number", "castDelay must be a number" },
+      }
     end,
     default = 20,
   },
   rechargeTime = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "rechargeTime needs to be a number"
-      assert(type(v) == "number", err)
+      return test_conditionals{
+        { type(val) == "number", "rechargeTime must be a number" },
+      }
     end,
     default = 40,
   },
   manaMax = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "manaMax needs to be a number > 0"
-      assert(type(val) == "number", err)
-      assert(v > 0, err)
+      return test_conditionals{
+        { type(val) == "number", "manaMax must be a number" },
+        { val > 0, "manaMax must be a number > 0" },
+      }
     end,
     default = 500,
   },
   mana = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "mana needs to be a number > 0"
-      assert(type(val) == "number", err)
-      assert(v > 0, err)
+      return test_conditionals{
+        { type(val) == "number", "mana must be a number" },
+        { val > 0, "mana must be a number > 0" },
+      }
     end,
     default = 500,
   },
   manaChargeSpeed = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "manaChargeSpeed needs to be a number > 0"
-      assert(type(val) == "number", err)
-      assert(val > 0, err)
+      return test_conditionals{
+        { type(val) == "number", "manaChargeSpeed must be a number" },
+        { val > 0, "manaChargeSpeed must be a number > 0" },
+      }
     end,
     default = 200,
   },
   capacity = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "capacity needs to be a number > 0"
-      assert(type(val) == "number", err)
-      assert(val > 0, err)
+      return test_conditionals{
+        { type(val) == "number", "capacity must be a number" },
+        { val > 0, "capacity must be a number > 0" },
+      }
     end,
     default = 10,
   },
   spread = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "spread needs to be a number"
-      assert(type(val) == "number", err)
+      return test_conditionals{
+        { type(val) == "number", "spread must be a number" },
+      }
     end,
     default = 10,
   },
   speedMultiplier = {
     validate = function(val)
-      local v = tonumber(val)
-      local err = "spread needs to be a number"
-      assert(type(val) == "number", err)
+      return test_conditionals{
+        { type(val) == "number", "speedMultiplier must be a number" },
+      }
     end,
     default = 1,
   },
 }
+-- Throws an error if the value doesn't have the correct format or the property doesn't exist
+local function validate_property(name, value)
+  if wand_props[name] == nil then
+    error(name .. " is not a valid wand property.", 4)
+  end
+  local success, err = wand_props[name].validate(value)
+  if not success then
+    error(err, 4)
+  end
+end
 
 --[[
   values is a table that contains info on what values to set
@@ -111,18 +129,14 @@ wand_props = {
   calls error() if values contains invalid properties
   fills in missing properties with default values
 ]]
+
 function validate_wand_properties(values)
   if type(values) ~= "table" then
     error("Arg 'values': table expected.")
   end
   -- Check if all passed in values are valid wand properties and have the required type
-  for k,v in pairs(values) do
-    if wand_props[k] == nil then
-      error("Key '" .. tostring(k) .. "' is not a valid wand property.")
-    else
-      -- The validate function calls error() if the validation fails
-      wand_props[k].validate(v)
-    end
+  for k, v in pairs(values) do
+    validate_property(k, v)
   end
   -- Fill in missing properties with default values
   for k,v in pairs(wand_props) do
@@ -148,15 +162,6 @@ end
 
 local function ends_with(str, ending)
   return ending == "" or str:sub(-#ending) == ending
-end
-
-local function validate_property(name, value)
-  if wand_props[name] == nil then
-    error(name .. " is not a valid wand property.")
-  end
-  if value ~= nil then
-    -- check if value has the correct format etc for key
-  end
 end
 
 -- ##########################
@@ -240,13 +245,13 @@ function wand:_SetProperty(key, value)
   local mapped_key = variable_mappings[key].name
   local target_setters = {
     ability_component = function(key, value)
-      ComponentSetValue(self.ability_component, key, value)
+      ComponentSetValue2(self.ability_component, key, value)
     end,
     gunaction_config = function(key, value)
-      ComponentObjectSetValue(self.ability_component, "gunaction_config", key, value)
+      ComponentObjectSetValue2(self.ability_component, "gunaction_config", key, value)
     end,
     gun_config = function(key, value)
-      ComponentObjectSetValue(self.ability_component, "gun_config", key, value)
+      ComponentObjectSetValue2(self.ability_component, "gun_config", key, value)
     end,
   }
   -- We need a special rule for capacity, since always cast spells count towards capacity, but not in the UI...
@@ -261,20 +266,20 @@ function wand:_SetProperty(key, value)
     end
     self:RemoveSpells(spells_to_remove)
   end
-  target_setters[variable_mappings[key].target](mapped_key, tostring(value))
+  target_setters[variable_mappings[key].target](mapped_key, value)
 end
 -- Retrieves the actual property from the component or object
 function wand:_GetProperty(key)
   local mapped_key = variable_mappings[key].name
   local target_getters = {
     ability_component = function(key)
-      return ComponentGetValue(self.ability_component, key, value)
+      return ComponentGetValue2(self.ability_component, key, value)
     end,
     gunaction_config = function(key)
-      return ComponentObjectGetValue(self.ability_component, "gunaction_config", key)
+      return ComponentObjectGetValue2(self.ability_component, "gunaction_config", key)
     end,
     gun_config = function(key)
-      return ComponentObjectGetValue(self.ability_component, "gun_config", key)
+      return ComponentObjectGetValue2(self.ability_component, "gun_config", key)
     end,
   }
   local result = target_getters[variable_mappings[key].target](mapped_key)
@@ -282,12 +287,12 @@ function wand:_GetProperty(key)
   if key == "capacity" then
     result = result - select(2, self:GetSpellsCount())
   end
-  return tonumber(result)
+  return result
 end
 
 function wand:SetProperties(key_values)
   for k,v in pairs(key_values) do
-    validate_property(k)
+    validate_property(k, v)
     self:_SetProperty(k, v)
   end
 end
@@ -302,7 +307,6 @@ function wand:GetProperties(keys)
   end
   local result = {}
   for i,key in ipairs(keys) do
-    validate_property(key)
     result[key] = self:_GetProperty(key)
   end
   return result
@@ -470,9 +474,8 @@ function wand:SetFrozen(freeze_wand, freeze_spells)
 end
 
 function wand:SetSprite(item_file, offset_x, offset_y, tip_x, tip_y)
-  local ability_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "AbilityComponent")
-	if ability_comp then
-    ComponentSetValue2(ability_comp, "sprite_file", item_file)
+	if self.ability_component then
+    ComponentSetValue2(self.ability_component, "sprite_file", item_file)
 	end
   local sprite_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteComponent", "item")
   if sprite_comp then
@@ -488,10 +491,9 @@ function wand:SetSprite(item_file, offset_x, offset_y, tip_x, tip_y)
 end
 
 function wand:GetSprite()
-  local ability_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "AbilityComponent")
   local item_file, offset_x, offset_y, tip_x, tip_y
-	if ability_comp then
-		item_file = ComponentGetValue2(ability_comp, "sprite_file")
+	if self.ability_component then
+		item_file = ComponentGetValue2(self.ability_component, "sprite_file")
 	end
 	local sprite_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteComponent", "item")
 	if sprite_comp then

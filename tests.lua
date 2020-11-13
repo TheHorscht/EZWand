@@ -86,7 +86,7 @@ function test_constructors()
   assert(wand.ability_component ~= nil)
   -- Check if defaults were set
   for k,v in pairs(wand_props) do
-    assert(tonumber(wand[k]) == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
+    assert(wand[k] == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
   end
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 0, "Spells count expected to be 0, got: " .. spells_count)
@@ -98,7 +98,7 @@ function test_constructors()
   assert(wand.entity_id ~= nil)
   assert(wand.ability_component ~= nil)
   for k,v in pairs(wand_props) do
-    assert(tonumber(wand[k]) == v.default)
+    assert(wand[k] == v.default)
   end
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 0)
@@ -128,10 +128,10 @@ function test_constructors()
 end
 
 function test_getters_and_setters(wand)
-  wand.shuffle = 0
-  assert(wand.shuffle == 0)
-  wand.shuffle = 1
-  assert(wand.shuffle == 1)
+  wand.shuffle = false
+  assert(wand.shuffle == false)
+  wand.shuffle = true
+  assert(wand.shuffle == true)
   wand.spellsPerCast = 17
   assert(wand.spellsPerCast == 17)
   wand.castDelay = 17
@@ -169,7 +169,7 @@ end
 function test_SetProperties(wand)
   wand:SetProperties{ manaMax = 6969, spread = -42.47 }
   assert(wand.manaMax == 6969)
-  assert(wand.spread == -42.47)
+  assert(wand.spread - -42.47 < 0.01)
 end
 
 function test_RemoveSpells(wand)

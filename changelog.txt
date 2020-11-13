@@ -1,3 +1,4 @@
+CHANGE: wand.shuffle needs to be boolean now instead of 0 or 1
 Add SetSprite() and GetSprite()
 Add new ways to add multiple spells.
 CHANGE: RemoveSpells now allows removing only one instance of a spell

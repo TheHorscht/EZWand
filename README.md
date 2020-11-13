@@ -26,7 +26,7 @@ local wand = EZWand{
   -- What is not set is initialized with defaults
 }
 -- Default values are:
-wand.shuffle = 0
+wand.shuffle = false
 wand.spellsPerCast = 1
 wand.castDelay = 20
 wand.rechargeTime = 40
@@ -41,12 +41,12 @@ wand.speedMultiplier = 1
 ```lua
 -- Single properties
 wand.manaMax = 123
-wand.shuffle = 0
+wand.shuffle = false
 wand.capacity = wand.capacity + 5
 -- Set multiple at once
 wand:SetProperties({
   manaMax = 200,
-  shuffle = 1
+  shuffle = true
 })
 -- Get multiple at once
 local props = wand:GetProperties() -- Gets all
@@ -132,7 +132,7 @@ Naming convention for the functions is Add/Remove for regular spells and Attach/
 The names for the properties resemble the one found ingame, not the ones on the components.
 ### Here are all available properties:
 ```lua
-  wand.shuffle -- 1 or 0
+  wand.shuffle -- true or false
   wand.spellsPerCast
   -- in frames, ingame values are based on 60 FPS, so 60 would be 1.0s
   wand.castDelay
