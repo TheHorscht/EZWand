@@ -63,6 +63,8 @@ local spells_to_add = { "BULLET", "BULLET", "BLACK_HOLE" }
 wand:AddSpells(spells_to_add)
 -- Or add multiple like this, which will result in 1 bomb followed by 3 bullets and then 1 black hole:
 wand:AddSpells("BOMB", { "BULLET", 3 }, "BLACK_HOLE")
+-- the same but different syntax like this
+wand:AddSpells("BOMB", "BULLET", 3, "BLACK_HOLE")
 -- This also works with when passing in a table
 
 -- To add always cast spells, simply use the same syntax
@@ -94,11 +96,11 @@ local spells, attached_spells = wand:GetSpells()
 spells = {
   {
     action_id = "BLACK_HOLE",
-    inventory_x = 1, -- Position in inventory, DOES NOT WORK YET
+    inventory_x = 1, inventory_y = 0,
     entity_id = <entity_id>
   }, {
     action_id = "GRENADE",
-    inventory_x = 2,
+    inventory_x = 2, inventory_y = 0,
     entity_id = <entity_id>
   }
 }
@@ -120,6 +122,10 @@ wand:PlaceAt(x, y)
 wand:PutInPlayersInventory()
 wand:SetSprite(image_file, offset_x, offset_y, tip_x, tip_y)
 local image_file, offset_x, offset_y, tip_x, tip_y = wand:GetSprite()
+-- Make it impossible to edit the wand
+-- freeze_wand {boolean} prevents spells from being added to the wand or moved
+-- freeze_spells {boolean} prevents the spells from being removed
+wand:SetFrozen(freeze_wand, freeze_spells)
 ```
 ***
 Naming convention for the functions is Add/Remove for regular spells and Attach/Detach for always cast spells.

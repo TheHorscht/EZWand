@@ -456,6 +456,19 @@ function wand:DetachSpells(...)
   self:_RemoveSpells(spells, true)
 end
 
+-- Make it impossible to edit the wand
+-- freeze_wand prevents spells from being added to the wand or moved
+-- freeze_spells prevents the spells from being removed
+function wand:SetFrozen(freeze_wand, freeze_spells)
+  local item_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "ItemComponent")
+  ComponentSetValue2(item_component, "is_frozen", freeze_wand)
+  local spells = self:GetSpells()
+  for i, spell in ipairs(spells) do
+    local item_component = EntityGetFirstComponentIncludingDisabled(spell.entity_id, "ItemComponent")
+    ComponentSetValue2(item_component, "is_frozen", freeze_spells)
+  end
+end
+
 function wand:SetSprite(item_file, offset_x, offset_y, tip_x, tip_y)
   local ability_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "AbilityComponent")
 	if ability_comp then
