@@ -196,7 +196,7 @@ function wand:new(from, rng_seed_x, rng_seed_y)
   setmetatable(o, self)
   if type(from) == "table" or from == nil then
     -- Just load some existing wand that we alter later instead of creating one from scratch
-    protected.entity_id = EntityLoad("data/entities/items/wand_level_04.xml")
+    protected.entity_id = EntityLoad("data/entities/items/wand_level_04.xml", rng_seed_x or 0, rng_seed_y or 0)
     protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
     -- Copy all validated props over or initialize with defaults
     local props = from or {}
@@ -211,8 +211,7 @@ function wand:new(from, rng_seed_x, rng_seed_y)
   else
     -- Load a wand by xml
     if ends_with(from, ".xml") then
-      local player_unit = EntityGetWithTag("player_unit")[1]
-      local x, y = EntityGetTransform(player_unit)
+      local x, y = GameGetCameraPos()
       protected.entity_id = EntityLoad(from, rng_seed_x or x, rng_seed_y or y)
       protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
     else
