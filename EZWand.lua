@@ -314,19 +314,33 @@ function wand:GetProperties(keys)
 end
 -- For making the interface nicer, this allows us to use this one function here for
 function wand:_AddSpells(spells, attach)
-  local spells_on_wand = self:GetSpells()
   -- Check if capacity is sufficient
   local count = 0
   for i, v in ipairs(spells) do
     count = count + v[2]
   end
+  local spells_on_wand = self:GetSpells()
+  local positions = {}
+  for i, v in ipairs(spells_on_wand) do
+    positions[v.inventory_x] = true
+  end
+
   if not attach and #spells_on_wand + count > self.capacity then
     error(string.format("Wand capacity (%d/%d) cannot fit %d more spells. ", #spells_on_wand, self.capacity, count), 3)
   end
+  local current_position = 1
   for i,spell in ipairs(spells) do
     for i2=1, spell[2] do
       if not attach then
-        AddGunAction(self.entity_id, spell[1])
+        local action_entity_id = CreateItemActionEntity(spell[1])
+        EntityAddChild(self.entity_id, action_entity_id)
+        EntitySetComponentsWithTagEnabled(action_entity_id, "enabled_in_world", false)
+        local item_component = EntityGetFirstComponentIncludingDisabled(action_entity_id, "ItemComponent")
+        while positions[current_position] do
+          current_position = current_position + 1
+        end
+        positions[current_position] = true
+        ComponentSetValue2(item_component, "inventory_slot", current_position, 0)
       else
         AddGunActionPermanent(self.entity_id, spell[1])
       end
