@@ -332,6 +332,23 @@ function test_RemoveSpecificSpells(wand)
   assert(occurences["BOMB"] == 1)
 end
 
+function test_DetachSpells_does_not_reduce_capacity(wand)
+  wand:DetachSpells()
+  wand:AttachSpells("BULLET", 5)
+  local old_capacity = wand.capacity
+  wand:DetachSpells()
+  assert(wand.capacity == old_capacity)
+end
+
+function test_reducing_capacity_removes_spells(wand)
+  wand:RemoveSpells()
+  wand.capacity = 20
+  wand:AddSpells("BOMB", 20)
+  wand.capacity = 15
+  local spells = wand:GetSpells()
+  assert(#spells == 15)
+end
+
 function test_Clone(wand)
   local cloned_wand = wand:Clone()
   for k,v in pairs(wand_props) do
@@ -373,6 +390,8 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_GetSpellsCount(wand)
   test_RemoveSpecificSpells(wand)
   test_Clone(wand)
+  test_reducing_capacity_removes_spells(wand)
+  test_DetachSpells_does_not_reduce_capacity(wand)
 end
 
 function test_extract_spells_from_vararg()
