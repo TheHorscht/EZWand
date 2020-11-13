@@ -322,8 +322,6 @@ function wand:_AddSpells(spells, attach)
       if not attach then
         AddGunAction(self.entity_id, spell[1])
       else
-        -- Extend slots to not consume one slot
-        -- self.capacity = self.capacity + 1
         AddGunActionPermanent(self.entity_id, spell[1])
       end
     end
