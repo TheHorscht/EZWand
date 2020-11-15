@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.1.1   #######
+-- #######   EZWand version v1.1.2   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -255,9 +255,7 @@ function wand:_SetProperty(key, value)
   }
   -- We need a special rule for capacity, since always cast spells count towards capacity, but not in the UI...
   if key == "capacity" then
-    -- TODO: set capacity to value + numalwayscastspells
     local spells, attached_spells = self:GetSpells()
-    value = value + #attached_spells
     -- If capacity is getting reduced, remove any spells that don't fit anymore
     local spells_to_remove = {}
     for i=#spells, value+1, -1 do
@@ -266,6 +264,7 @@ function wand:_SetProperty(key, value)
     if #spells_to_remove > 0 then
       self:RemoveSpells(spells_to_remove)
     end
+    value = value + #attached_spells
   end
   target_setters[variable_mappings[key].target](mapped_key, value)
 end

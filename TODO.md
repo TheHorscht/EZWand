@@ -1,2 +1,3 @@
+- Use GamePickUpInventoryItem( player_entity, item, false ) for PutnPlayersInventory? (Currently broken, plays pickup effect anyways)
 - Add property to change whether wand recharges (mana recharge and cast recharge) only in hand
 - Add function to serialize and deserialize wand to string? Hard with lots of spells...

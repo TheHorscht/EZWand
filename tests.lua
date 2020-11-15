@@ -386,14 +386,18 @@ end
 
 function test_reducing_capacity_removes_excess_spells(wand)
   wand:RemoveSpells()
+  wand:DetachSpells()
   wand.capacity = 20
   wand:AddSpells("BOMB", 20)
+  wand:AttachSpells("BOMB", 3)
   wand.capacity = 15
-  local spells = wand:GetSpells()
+  local spells, attached_spells = wand:GetSpells()
   assert(#spells == 15, #spells)
+  assert(#attached_spells == 3, #attached_spells)
   wand.capacity = 17
   spells = wand:GetSpells()
   assert(#spells == 15, #spells)
+  assert(#attached_spells == 3, #attached_spells)
 end
 
 function test_Clone(wand)

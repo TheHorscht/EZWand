@@ -1,3 +1,6 @@
+v1.1.2:
+- FIX reducing capacity not removing spells correctly
+
 v1.1.1:
 - FIX UpdateSprite throwing an error
 
