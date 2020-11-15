@@ -1,3 +1,6 @@
+v1.1.3:
+- FIX Wands thrown that were added to the inventory using PutInPlayersInventory() were not thrown correctly
+
 v1.1.2:
 - FIX reducing capacity not removing spells correctly
 

@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.1.2   #######
+-- #######   EZWand version v1.1.3   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -614,21 +614,13 @@ function wand:PutInPlayersInventory()
       end
     end
   end
-  if count < 4 then
+  local players = EntityGetWithTag("player_unit")
+  if count < 4 and #players > 0 then
     local item_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "ItemComponent")
     if item_component then
       ComponentSetValue2(item_component, "has_been_picked_by_player", true)
     end
-
-    EntitySetComponentsWithTagEnabled(self.entity_id, "enabled_in_world", false)
-    EntitySetComponentsWithTagEnabled(self.entity_id, "enabled_in_inventory", true)
-
-    local sprite_particle_emitter_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteParticleEmitterComponent")
-    if sprite_particle_emitter_comp then
-      EntitySetComponentIsEnabled(self.entity_id, sprite_particle_emitter_comp, false)
-    end
-
-    EntityAddChild(inventory_id, self.entity_id)
+    GamePickUpInventoryItem(players[1], self.entity_id, false)
   else
     error("Cannot add wand to players inventory, it's already full.", 2)
   end
