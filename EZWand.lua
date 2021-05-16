@@ -7,9 +7,20 @@ dofile_once("data/scripts/lib/utilities.lua")
 dofile_once("data/scripts/gun/procedural/wands.lua")
 dofile_once("data/scripts/gun/procedural/gun_procedural.lua")
 
+local version = "1.1.3"
+
 -- ##########################
 -- ####       UTILS      ####
 -- ##########################
+
+local function string_split(inputstr, sep)
+  sep = sep or "%s"
+  local t= {}
+  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+    table.insert(t, str)
+  end
+  return t
+end
 
 local function test_conditionals(conditions)
   for i, conditon in ipairs(conditions) do
@@ -624,6 +635,70 @@ function wand:PutInPlayersInventory()
   else
     error("Cannot add wand to players inventory, it's already full.", 2)
   end
+end
+
+-- Turns the wand properties etc into a string
+-- Output string looks like:
+-- shuffle[1|0];spellsPerCast;castDelay;rechargeTime;manaMax;mana;manaChargeSpeed;capacity;spread;speedMultiplier;
+-- SPELL_ONE,SPELL_TWO;ALWAYS_CAST_ONE,ALWAYS_CAST_TWO;sprite.png;offset_x;offset_y;tip_x;tip_y
+function wand:Serialize()
+  local spells_string = ""
+  local always_casts_string = ""
+  local spells, always_casts = self:GetSpells()
+  for i, spell in ipairs(spells) do
+    spells_string = spells_string .. (i == 1 and "" or ",") .. spell.action_id
+  end
+  for i, spell in ipairs(always_casts) do
+    always_casts_string = always_casts_string .. (i == 1 and "" or ",") .. spell.action_id
+  end
+
+  local sprite_image_file, offset_x, offset_y, tip_x, tip_y = self:GetSprite()
+
+  return ("EZWv%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%s;%d;%d;%d;%d"):format(
+    version,
+    self.shuffle and 1 or 0,
+    self.spellsPerCast,
+    self.castDelay,
+    self.rechargeTime,
+    self.manaMax,
+    self.mana,
+    self.manaChargeSpeed,
+    self.capacity,
+    self.spread,
+    self.speedMultiplier,
+    spells_string == "" and "-" or spells_string,
+    always_casts_string == "" and "-" or always_casts_string,
+    sprite_image_file, offset_x, offset_y, tip_x, tip_y
+  )
+end
+
+function wand:Deserialize(str)
+  local values = string_split(str, ";")
+  if #values ~= 18 then
+    error("Wrong wand import string format", 2)
+  end
+  local new_wand = wand:new()
+  new_wand.shuffle = values[2] == "1"
+  new_wand.spellsPerCast = tonumber(values[3])
+  new_wand.castDelay = tonumber(values[4])
+  new_wand.rechargeTime = tonumber(values[5])
+  new_wand.manaMax = tonumber(values[6])
+  new_wand.mana = tonumber(values[7])
+  new_wand.manaChargeSpeed = tonumber(values[8])
+  new_wand.capacity = tonumber(values[9])
+  new_wand.spread = tonumber(values[10])
+  new_wand.speedMultiplier = tonumber(values[11])
+
+  local spells = string_split(values[12] == "-" and "" or values[12], ",")
+  local always_cast_spells = string_split(values[13] == "-" and "" or values[13], ",")
+  new_wand:AddSpells(spells)
+  new_wand:AttachSpells(always_cast_spells)
+
+  new_wand:SetSprite(values[14], tonumber(values[15]), tonumber(values[16]), tonumber(values[17]), tonumber(values[18]))
+  -- for i, v in ipairs(values) do
+  --   print(v)
+  -- end
+  return new_wand
 end
 
 return function(from, rng_seed_x, rng_seed_y)
