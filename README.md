@@ -1,4 +1,4 @@
-# EZWand v1.1.3
+# EZWand v1.2.0
 
 A utility library for mod developers of Noita which simplifies the workflow of creating and manipulating wands. Use at your own risk I don't want to be responsible for your mod breaking :)
 
