@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.1.3   #######
+-- #######   EZWand version v1.2.0   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -7,11 +7,27 @@ dofile_once("data/scripts/lib/utilities.lua")
 dofile_once("data/scripts/gun/procedural/wands.lua")
 dofile_once("data/scripts/gun/procedural/gun_procedural.lua")
 
-local version = "1.1.3"
-
 -- ##########################
 -- ####       UTILS      ####
 -- ##########################
+
+-- Removes spells from a table whose ID is not found in the gun_actions table
+local function filter_spells(spells)
+  dofile_once("data/scripts/gun/gun_actions.lua")
+  if not spell_lookup then
+    spell_lookup = {}
+    for i, v in ipairs(actions) do
+      spell_lookup[v.id] = true
+    end
+  end
+  local out = {}
+  for i, spell in ipairs(spells) do
+    if spell_lookup[spell] then
+      table.insert(out, spell)
+    end
+  end
+  return out
+end
 
 local function string_split(inputstr, sep)
   sep = sep or "%s"
@@ -143,7 +159,7 @@ end
 
 function validate_wand_properties(values)
   if type(values) ~= "table" then
-    error("Arg 'values': table expected.")
+    error("Arg 'values': table expected.", 2)
   end
   -- Check if all passed in values are valid wand properties and have the required type
   for k, v in pairs(values) do
@@ -167,12 +183,49 @@ end
 
 -- Returns true if entity is a wand
 local function entity_is_wand(entity_id)
-	local comp = EntityGetComponentIncludingDisabled(entity_id, "ManaReloaderComponent")
-	return comp ~= nil
+	local ability_component = EntityGetFirstComponentIncludingDisabled(entity_id, "AbilityComponent")
+	return ComponentGetValue2(ability_component, "use_gun_script") == true
+end
+
+local function starts_with(str, start)
+  return str:match("^" .. start) ~= nil
 end
 
 local function ends_with(str, ending)
   return ending == "" or str:sub(-#ending) == ending
+end
+
+-- Parses a serialized wand string into a table with it's properties
+local function deserialize(str)
+  if not starts_with(str, "EZW") then
+    return "Wrong wand import string format"
+  end
+  local values = string_split(str, ";")
+  if #values ~= 18 then
+    return "Wrong wand import string format"
+  end
+
+  return {
+    props = {
+      shuffle = values[2] == "1",
+      spellsPerCast = tonumber(values[3]),
+      castDelay = tonumber(values[4]),
+      rechargeTime = tonumber(values[5]),
+      manaMax = tonumber(values[6]),
+      mana = tonumber(values[7]),
+      manaChargeSpeed = tonumber(values[8]),
+      capacity = tonumber(values[9]),
+      spread = tonumber(values[10]),
+      speedMultiplier = tonumber(values[11])
+    },
+    spells = string_split(values[12] == "-" and "" or values[12], ","),
+    always_cast_spells = string_split(values[13] == "-" and "" or values[13], ","),
+    sprite_image_file = values[14],
+    offset_x = tonumber(values[15]),
+    offset_y = tonumber(values[16]),
+    tip_x = tonumber(values[17]),
+    tip_y = tonumber(values[18])
+  }
 end
 
 -- ##########################
@@ -220,8 +273,22 @@ function wand:new(from, rng_seed_x, rng_seed_y)
     protected.entity_id = from
     protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
   else
+    if starts_with(from, "EZW") then
+      local values = deserialize(from)
+      protected.entity_id = EntityLoad("data/entities/items/wand_level_04.xml", rng_seed_x or 0, rng_seed_y or 0)
+      protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
+      validate_wand_properties(values.props)
+      o:SetProperties(values.props)
+      o:RemoveSpells()
+      o:DetachSpells()
+      -- Filter spells whose ID no longer exist (for instance when a modded spellpack was disabled)
+      values.spells = filter_spells(values.spells)
+      values.always_cast_spells = filter_spells(values.always_cast_spells)
+      o:AddSpells(values.spells)
+      o:AttachSpells(values.always_cast_spells)
+      o:SetSprite(values.sprite_image_file, values.offset_x, values.offset_y, values.tip_x, values.tip_y)
     -- Load a wand by xml
-    if ends_with(from, ".xml") then
+    elseif ends_with(from, ".xml") then
       local x, y = GameGetCameraPos()
       protected.entity_id = EntityLoad(from, rng_seed_x or x, rng_seed_y or y)
       protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
@@ -639,7 +706,7 @@ end
 
 -- Turns the wand properties etc into a string
 -- Output string looks like:
--- shuffle[1|0];spellsPerCast;castDelay;rechargeTime;manaMax;mana;manaChargeSpeed;capacity;spread;speedMultiplier;
+-- EZWv(version);shuffle[1|0];spellsPerCast;castDelay;rechargeTime;manaMax;mana;manaChargeSpeed;capacity;spread;speedMultiplier;
 -- SPELL_ONE,SPELL_TWO;ALWAYS_CAST_ONE,ALWAYS_CAST_TWO;sprite.png;offset_x;offset_y;tip_x;tip_y
 function wand:Serialize()
   local spells_string = ""
@@ -654,8 +721,22 @@ function wand:Serialize()
 
   local sprite_image_file, offset_x, offset_y, tip_x, tip_y = self:GetSprite()
 
+  -- Add a workaround for the starter wands which are the only ones with an xml sprite
+  -- Modded wands which use xmls won't work sadly
+  if sprite_image_file == "data/items_gfx/handgun.xml" then
+    sprite_image_file = "data/items_gfx/handgun.png"
+    offset_x = 4
+    offset_y = 3.5
+  end
+  if sprite_image_file == "data/items_gfx/bomb_wand.xml" then
+    sprite_image_file = "data/items_gfx/bomb_wand.png"
+    offset_x = 4
+    offset_y = 3.5
+  end
+
+  local serialize_version = "1"
   return ("EZWv%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%s;%d;%d;%d;%d"):format(
-    version,
+    serialize_version,
     self.shuffle and 1 or 0,
     self.spellsPerCast,
     self.castDelay,
@@ -672,35 +753,16 @@ function wand:Serialize()
   )
 end
 
-function wand:Deserialize(str)
-  local values = string_split(str, ";")
-  if #values ~= 18 then
-    error("Wrong wand import string format", 2)
+return setmetatable({}, {
+  __call = function(self, from, rng_seed_x, rng_seed_y)
+    return wand:new(from, rng_seed_x, rng_seed_y)
+  end,
+  __newindex = function(self)
+    error("Can't assign to this object.", 2)
+  end,
+  __index = function(self, key)
+    return ({
+      Deserialize = deserialize
+    })[key]
   end
-  local new_wand = wand:new()
-  new_wand.shuffle = values[2] == "1"
-  new_wand.spellsPerCast = tonumber(values[3])
-  new_wand.castDelay = tonumber(values[4])
-  new_wand.rechargeTime = tonumber(values[5])
-  new_wand.manaMax = tonumber(values[6])
-  new_wand.mana = tonumber(values[7])
-  new_wand.manaChargeSpeed = tonumber(values[8])
-  new_wand.capacity = tonumber(values[9])
-  new_wand.spread = tonumber(values[10])
-  new_wand.speedMultiplier = tonumber(values[11])
-
-  local spells = string_split(values[12] == "-" and "" or values[12], ",")
-  local always_cast_spells = string_split(values[13] == "-" and "" or values[13], ",")
-  new_wand:AddSpells(spells)
-  new_wand:AttachSpells(always_cast_spells)
-
-  new_wand:SetSprite(values[14], tonumber(values[15]), tonumber(values[16]), tonumber(values[17]), tonumber(values[18]))
-  -- for i, v in ipairs(values) do
-  --   print(v)
-  -- end
-  return new_wand
-end
-
-return function(from, rng_seed_x, rng_seed_y)
-  return wand:new(from, rng_seed_x, rng_seed_y)
-end
+})

@@ -1,3 +1,8 @@
+v1.2.0:
+- Added serialize function and add overload for constructor which takes a serialized string to build a wand out of it
+- Added EZWand.Deserialize(serialized_string) which returns a table with the deserialized values without creating a new wand
+- Change logic what constitutes a wand from having a ManaReloaderComponent to having an AbilityComponent with use_gun_script="1"
+
 v1.1.3:
 - FIX Wands thrown that were added to the inventory using PutInPlayersInventory() were not thrown correctly
 

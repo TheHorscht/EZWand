@@ -464,8 +464,35 @@ function test_extract_spells_from_vararg()
   assert(throws(extract_spells_from_vararg, { true }))
 end
 
+function test_serialize_deserialize()
+  local wand = Wand({
+    shuffle = false,
+    spellsPerCast = 1,
+    castDelay = 20,
+    rechargeTime = 40,
+    manaMax = 500,
+    mana = 500,
+    manaChargeSpeed = 200,
+    capacity = 10,
+    spread = 10,
+    speedMultiplier = 1,
+  })
+  wand:AddSpells("BOMB", 2, "BLACK_HOLE")
+  wand:AttachSpells("LIGHT_BULLET", "BULLET_TIMER", 2)
+  local serialized = wand:Serialize()
+  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0771.png;1;4;12;0"
+  assert(serialized == expected)
+  EntityKill(wand.entity_id)
+  wand = Wand(serialized)
+  local serialized = wand:Serialize()
+  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0771.png;1;4;12;0"
+  assert(serialized == expected)
+  EntityKill(wand.entity_id)
+end
+
 function run_wand_tests()
   test_constructors()
   test_extract_spells_from_vararg()
+  test_serialize_deserialize()
   print("All tests passed!")
 end
