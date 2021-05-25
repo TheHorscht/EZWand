@@ -1,3 +1,6 @@
+v1.2.1:
+- FIX Overwriting of init_total_prob caused by dofiling data/scripts/gun/procedural/gun_procedural.lua
+
 v1.2.0:
 - Added serialize function and add overload for constructor which takes a serialized string to build a wand out of it
 - Added EZWand.Deserialize(serialized_string) which returns a table with the deserialized values without creating a new wand

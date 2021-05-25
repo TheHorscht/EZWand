@@ -1,11 +1,10 @@
 -- #########################################
--- #######   EZWand version v1.2.0   #######
+-- #######   EZWand version v1.2.1   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
 dofile_once("data/scripts/lib/utilities.lua")
 dofile_once("data/scripts/gun/procedural/wands.lua")
-dofile_once("data/scripts/gun/procedural/gun_procedural.lua")
 
 -- ##########################
 -- ####       UTILS      ####
@@ -634,6 +633,49 @@ function wand:Clone()
   new_wand:SetSprite(self:GetSprite())
   return new_wand
 end
+
+--[[
+  These are pulled from data/scripts/gun/procedural/gun_procedural.lua
+  because dofiling that file overwrites the init_total_prob function,
+  which ruins things in biome scripts
+]]
+function WandDiff( gun, wand )
+	local score = 0
+	score = score + ( math.abs( gun.fire_rate_wait - wand.fire_rate_wait ) * 2 )
+	score = score + ( math.abs( gun.actions_per_round - wand.actions_per_round ) * 20 )
+	score = score + ( math.abs( gun.shuffle_deck_when_empty - wand.shuffle_deck_when_empty ) * 30 )
+	score = score + ( math.abs( gun.deck_capacity - wand.deck_capacity ) * 5 )
+	score = score + math.abs( gun.spread_degrees - wand.spread_degrees )
+	score = score + math.abs( gun.reload_time - wand.reload_time )
+	return score
+end
+
+function GetWand( gun )
+	local best_wand = nil
+	local best_score = 1000
+	local gun_in_wand_space = {}
+
+	gun_in_wand_space.fire_rate_wait = clamp(((gun["fire_rate_wait"] + 5) / 7)-1, 0, 4)
+	gun_in_wand_space.actions_per_round = clamp(gun["actions_per_round"]-1,0,2)
+	gun_in_wand_space.shuffle_deck_when_empty = clamp(gun["shuffle_deck_when_empty"], 0, 1)
+	gun_in_wand_space.deck_capacity = clamp( (gun["deck_capacity"]-3)/3, 0, 7 ) -- TODO
+	gun_in_wand_space.spread_degrees = clamp( ((gun["spread_degrees"] + 5 ) / 5 ) - 1, 0, 2 )
+	gun_in_wand_space.reload_time = clamp( ((gun["reload_time"]+5)/25)-1, 0, 2 )
+
+	for k,wand in pairs(wands) do
+		local score = WandDiff( gun_in_wand_space, wand )
+		if( score <= best_score ) then
+			best_wand = wand
+			best_score = score
+			-- just randomly return one of them...
+			if( score == 0 and Random(0,100) < 33 ) then
+				return best_wand
+			end
+		end
+	end
+	return best_wand
+end
+--[[ /data/scripts/gun/procedural/gun_procedural.lua ]]
 
 -- Applies an appropriate Sprite using the games own algorithm
 function wand:UpdateSprite()
