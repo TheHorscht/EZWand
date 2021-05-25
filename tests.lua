@@ -431,6 +431,26 @@ function test_Clone(wand)
   EntityKill(cloned_wand.entity_id)
 end
 
+function test_UpdateSprite(wand)
+  wand.shuffle = true
+  wand.spellsPerCast = 17
+  wand.castDelay = 17
+  wand.rechargeTime = 17
+  wand.manaMax = 17
+  wand.mana = 17
+  wand.manaChargeSpeed = 17
+  wand.capacity = 17
+  wand.spread = 17
+  wand.speedMultiplier = 17
+  wand:UpdateSprite()
+  local a, b, c, d, e = wand:GetSprite()
+  assert(a == "data/items_gfx/wands/wand_0706.png")
+  assert(b == 2)
+  assert(c == 4)
+  assert(d == 16)
+  assert(e == 0)
+end
+
 function test_Everything(wand) -- Gets called multiple times from inside test_constructors, DON'T CALL THIS YOURSELF
   test_getters_and_setters(wand)
   test_GetProperties(wand)
@@ -444,6 +464,7 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_reducing_capacity_removes_excess_spells(wand)
   test_DetachSpells_does_not_reduce_capacity(wand)
   test_RemoveSpellAtIndex(wand)
+  test_UpdateSprite(wand)
 end
 
 function test_extract_spells_from_vararg()
@@ -479,13 +500,14 @@ function test_serialize_deserialize()
   })
   wand:AddSpells("BOMB", 2, "BLACK_HOLE")
   wand:AttachSpells("LIGHT_BULLET", "BULLET_TIMER", 2)
+  wand:SetSprite("mods/what/whatever.png", 1, 2, 3, 4)
   local serialized = wand:Serialize()
-  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0771.png;1;4;12;0"
-  assert(serialized == expected)
+  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;mods/what/whatever.png;1;2;3;4"
+  assert(serialized == expected, string.format("\nExpected:\n%s\nGot:\n%s", expected, serialized))
   EntityKill(wand.entity_id)
   wand = Wand(serialized)
   local serialized = wand:Serialize()
-  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0771.png;1;4;12;0"
+  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;mods/what/whatever.png;1;2;3;4"
   assert(serialized == expected)
   EntityKill(wand.entity_id)
 end
