@@ -1,3 +1,7 @@
+Rework split_string and GetSprite()
+v1.2.2:
+- GetSprite() now returns SpriteComponent:image_file if AbilityComponent:sprite_file is an empty string
+
 v1.2.1:
 - FIX Overwriting of init_total_prob caused by dofiling data/scripts/gun/procedural/gun_procedural.lua
 

@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.2.1   #######
+-- #######   EZWand version v1.2.2   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -31,9 +31,27 @@ end
 local function string_split(inputstr, sep)
   sep = sep or "%s"
   local t= {}
-  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
-    table.insert(t, str)
+  local pos = 0
+  local function next(s)
+    pos = pos + 1
+    local out = s:sub(pos, pos)
+    if out ~= "" then
+      return out
+    end
   end
+  local cur_str = ""
+  local next_char = next(inputstr)
+  while next_char do
+    if next_char == sep then
+      table.insert(t, cur_str)
+      next_char = next(inputstr)
+      cur_str = ""
+    else
+      cur_str = cur_str .. next_char
+      next_char = next(inputstr)
+    end
+  end
+  table.insert(t, cur_str)
   return t
 end
 
@@ -604,20 +622,23 @@ function wand:SetSprite(item_file, offset_x, offset_y, tip_x, tip_y)
 end
 
 function wand:GetSprite()
-  local item_file, offset_x, offset_y, tip_x, tip_y
+  local sprite_file, offset_x, offset_y, tip_x, tip_y = "", 0, 0, 0, 0
 	if self.ability_component then
-		item_file = ComponentGetValue2(self.ability_component, "sprite_file")
+		sprite_file = ComponentGetValue2(self.ability_component, "sprite_file")
 	end
 	local sprite_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "SpriteComponent", "item")
 	if sprite_comp then
-		offset_x = ComponentGetValue2(sprite_comp, "offset_x")
+    if sprite_file == "" then
+      sprite_file = ComponentGetValue2(sprite_comp, "image_file")
+    end
+    offset_x = ComponentGetValue2(sprite_comp, "offset_x")
     offset_y = ComponentGetValue2(sprite_comp, "offset_y")
 	end
 	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "HotspotComponent", "shoot_pos")
   if hotspot_comp then
     tip_x, tip_y = ComponentGetValue2(hotspot_comp, "offset")
   end
-  return item_file, offset_x, offset_y, tip_x, tip_y
+  return sprite_file, offset_x, offset_y, tip_x, tip_y
 end
 
 function wand:Clone()
