@@ -1,4 +1,7 @@
-Rework split_string and GetSprite()
+v1.2.3:
+- Change requirement of capacity being > 0 to >= 0
+- Remove requirement for manaRechargeSpeed to be bigger than 0
+
 v1.2.2:
 - GetSprite() now returns SpriteComponent:image_file if AbilityComponent:sprite_file is an empty string
 

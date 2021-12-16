@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.2.2   #######
+-- #######   EZWand version v1.2.3   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -120,7 +120,6 @@ wand_props = {
     validate = function(val)
       return test_conditionals{
         { type(val) == "number", "manaChargeSpeed must be a number" },
-        { val > 0, "manaChargeSpeed must be a number > 0" },
       }
     end,
     default = 200,
@@ -129,7 +128,7 @@ wand_props = {
     validate = function(val)
       return test_conditionals{
         { type(val) == "number", "capacity must be a number" },
-        { val > 0, "capacity must be a number > 0" },
+        { val >= 0, "capacity must be a number >= 0" },
       }
     end,
     default = 10,
