@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.2.3   #######
+-- #######   EZWand version v1.2.4   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -221,7 +221,7 @@ local function deserialize(str)
     return "Wrong wand import string format"
   end
 
-  return {
+  local out = {
     props = {
       shuffle = values[2] == "1",
       spellsPerCast = tonumber(values[3]),
@@ -242,6 +242,15 @@ local function deserialize(str)
     tip_x = tonumber(values[17]),
     tip_y = tonumber(values[18])
   }
+
+  if #out.spells == 1 and out.spells[1] == "" then
+    out.spells = {}
+  end
+  if #out.always_cast_spells == 1 and out.always_cast_spells[1] == "" then
+    out.always_cast_spells = {}
+  end
+
+  return out
 end
 
 -- ##########################

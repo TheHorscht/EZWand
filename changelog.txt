@@ -1,3 +1,6 @@
+v1.2.4:
+- FIX EZWand.Deserialize(): When no spells were present, would return table with 1 element being an empty string
+
 v1.2.3:
 - Change requirement of capacity being > 0 to >= 0
 - Remove requirement for manaRechargeSpeed to be bigger than 0
