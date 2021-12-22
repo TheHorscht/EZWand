@@ -1,3 +1,6 @@
+UNRELEASED:
+- FIX GetSpells() returned incorrect always cast spells order
+
 v1.2.4:
 - FIX EZWand.Deserialize(): When no spells were present, would return table with 1 element being an empty string
 

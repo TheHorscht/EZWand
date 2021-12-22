@@ -545,7 +545,6 @@ function wand:GetSpells()
 			end
 		end
   end
-  table.sort(always_cast_spells, function(a, b) return a.inventory_x < b.inventory_x end)
   table.sort(spells, function(a, b) return a.inventory_x < b.inventory_x end)
 	return spells, always_cast_spells
 end
