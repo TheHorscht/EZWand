@@ -1,4 +1,5 @@
-UNRELEASED:
+v1.3.0:
+- Add EZWand.RenderTooltip()
 - FIX GetSpells() returned incorrect always cast spells order
 
 v1.2.4:
