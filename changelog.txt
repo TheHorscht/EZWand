@@ -1,3 +1,6 @@
+v1.3.1:
+- Add optional gui parameter to EZWand.RenderTooltip(), to use that gui instead of creating its own
+
 v1.3.0:
 - Add EZWand.RenderTooltip()
 - FIX GetSpells() returned incorrect always cast spells order

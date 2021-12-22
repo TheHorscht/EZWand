@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.3.0   #######
+-- #######   EZWand version v1.3.1   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -293,10 +293,14 @@ end
 -- }
 -- To get this easily you can use EZWand.Deserialize(EZWand(wand):Serialize())
 -- Better cache it though, it's not super expensive but...
-local function render_tooltip(origin_x, origin_y, wand)
-  gui = gui or GuiCreate()
-  GuiStartFrame(gui)
+local function render_tooltip(origin_x, origin_y, wand, gui_)
+  -- gui = gui or GuiCreate()
+  gui = gui_ or gui or GuiCreate()
+  if not gui_ then
+    GuiStartFrame(gui)
+  end
   GuiIdPushString(gui, "EZWand_tooltip")
+  -- GuiOptionsAdd(gui, GUI_OPTION.NonInteractive)
   if not spell_lookup then
     spell_lookup = {}
     dofile_once("data/scripts/gun/gun_actions.lua")
