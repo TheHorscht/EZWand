@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.3.1   #######
+-- #######   EZWand version v1.3.2   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -401,7 +401,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   local always_cast_spell_icon_scale = 0.711
   local add_some = 0 -- I'm out of creativity for variable names...
   -- Always casts
-  if #wand.always_cast_spells > 0 then
+  if type(wand.always_cast_spells) == "table" and #wand.always_cast_spells > 0 then
     add_some = 3
     local background_scale = 0.768
     GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + last_icon_height + 8, true)
@@ -411,6 +411,9 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     local _, _, _, ac_icon_x, ac_icon_y, ac_icon_width, ac_icon_height = GuiGetPreviousWidgetInfo(gui)
     local last_ac_x, last_ac_y, last_ac_width, last_ac_height
     for i, spell in ipairs(wand.always_cast_spells) do
+      if i == 1 then
+        update_bounds()
+      end
       local item_bg_icon = get_spell_bg(spell)
       local w, h = GuiGetImageDimensions(gui, item_bg_icon, background_scale)
       local x, y 
@@ -428,7 +431,6 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       -- Spell icon
       GuiImage(gui, new_id(), x + 2, y + 2, (spell_lookup[spell] and spell_lookup[spell].icon) or "data/ui_gfx/gun_actions/unidentified.png", 1, always_cast_spell_icon_scale, always_cast_spell_icon_scale)
-      update_bounds()
     end
     GuiLayoutEnd(gui)
   end
