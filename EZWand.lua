@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.3.2   #######
+-- #######   EZWand version v1.4.0   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -727,6 +727,10 @@ end
 function wand:AttachSpells(...)
   local spells = extract_spells_from_vararg(...)
   self:_AddSpells(spells, true)
+end
+-- Returns the amount of slots on a wand that are not occupied by a spell
+function wand:GetFreeSlotsCount()
+  return self.capacity - self:GetSpellsCount()
 end
 -- Returns: spells_count, always_cast_spells_count
 function wand:GetSpellsCount()

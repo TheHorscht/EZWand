@@ -1,3 +1,4 @@
+- Add test for GetFreeSlotsCount()
 - Add tests for deserialization when missing wand properties or sprites, weird properties (like negative capacities)
 - Use GamePickUpInventoryItem( player_entity, item, false ) for PutnPlayersInventory? (Currently broken, plays pickup effect anyways)
 - Add property to change whether wand recharges (mana recharge and cast recharge) only in hand

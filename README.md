@@ -1,4 +1,4 @@
-# EZWand v1.3.2
+# EZWand v1.4.0
 
 A utility library for mod developers of Noita which simplifies the workflow of creating and manipulating wands. Use at your own risk I don't want to be responsible for your mod breaking :)
 
@@ -92,6 +92,8 @@ local success, error_msg = wand:RemoveSpellAtIndex(index)
 ```lua
 -- Returns two values, first is regular spells, second always cast spells
 local spells_count, attached_spells_count = wand:GetSpellsCount()
+-- Returns the amount of slots on a wand that are not occupied by a spell
+local free_slots_count = wand:GetFreeSlotsCount()
 -- Now let's get the spells
 local spells, attached_spells = wand:GetSpells()
 -- spells and attached_spells is a table with the following properties:
