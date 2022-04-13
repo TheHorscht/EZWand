@@ -1,3 +1,6 @@
+v1.4.1:
+- FIX Spells not updating when wand is being held
+
 v1.4.0:
 - Added GetFreeSlotsCount()
 

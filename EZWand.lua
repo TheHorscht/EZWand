@@ -487,6 +487,18 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   GuiIdPop(gui)
 end
 
+local function refresh_wand_if_in_inventory(wand_id)
+  -- Refresh the wand if it's being held by the player
+  local parent = EntityGetRootEntity(wand_id)
+  if EntityHasTag(parent, "player_unit") then
+    local inventory2_comp = EntityGetFirstComponentIncludingDisabled(parent, "Inventory2Component")
+    if inventory2_comp then
+      ComponentSetValue2(inventory2_comp, "mForceRefresh", true)
+      ComponentSetValue2(inventory2_comp, "mActualActiveItem", 0)
+    end
+  end
+end
+
 -- ##########################
 -- ####    UTILS END     ####
 -- ##########################
@@ -682,6 +694,7 @@ function wand:_AddSpells(spells, attach)
       end
     end
   end
+  refresh_wand_if_in_inventory(self.entity_id)
 end
 
 function extract_spells_from_vararg(...)
@@ -807,6 +820,7 @@ function wand:_RemoveSpells(spells_to_remove, detach)
       end
     end
   end
+  refresh_wand_if_in_inventory(self.entity_id)
 end
 -- action_ids = {"BLACK_HOLE", "GRENADE"} remove all spells of those types
 -- If action_ids is empty, remove all spells
