@@ -1,8 +1,9 @@
 -- #########################################
--- #######   EZWand version v1.4.1   #######
+-- #######   EZWand version v1.5.0   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
+dofile_once("data/scripts/gun/gun_enums.lua")
 dofile_once("data/scripts/lib/utilities.lua")
 dofile_once("data/scripts/gun/procedural/wands.lua")
 
@@ -90,6 +91,13 @@ wand_props = {
     end,
     default = 20,
   },
+  currentCastDelay = {
+    validate = function(val)
+      return test_conditionals{
+        { type(val) == "number", "currentCastDelay must be a number" },
+      }
+    end,
+  },
   rechargeTime = {
     validate = function(val)
       return test_conditionals{
@@ -97,6 +105,13 @@ wand_props = {
       }
     end,
     default = 40,
+  },
+  currentRechargeTime = {
+    validate = function(val)
+      return test_conditionals{
+        { type(val) == "number", "currentRechargeTime must be a number" },
+      }
+    end,
   },
   manaMax = {
     validate = function(val)
@@ -579,7 +594,9 @@ local variable_mappings = {
   shuffle = { target = "gun_config", name = "shuffle_deck_when_empty" },
   spellsPerCast = { target = "gun_config", name="actions_per_round"},
   castDelay = { target = "gunaction_config", name="fire_rate_wait"},
+  currentCastDelay = { target = "ability_component", name="mNextFrameUsable"},
   rechargeTime = { target = "gun_config", name="reload_time"},
+  currentRechargeTime = { target = "ability_component", name="mReloadNextFrameUsable"},
   manaMax = { target = "ability_component", name="mana_max"},
   mana = { target = "ability_component", name="mana"},
   manaChargeSpeed = { target = "ability_component", name="mana_charge_speed"},
@@ -593,7 +610,16 @@ function wand:_SetProperty(key, value)
   local mapped_key = variable_mappings[key].name
   local target_setters = {
     ability_component = function(key, value)
-      ComponentSetValue2(self.ability_component, key, value)
+      if key == "mNextFrameUsable" then
+        ComponentSetValue2(self.ability_component, key, GameGetFrameNum() + value)
+        ComponentSetValue2(self.ability_component, "mCastDelayStartFrame", GameGetFrameNum())
+      elseif key == "mReloadNextFrameUsable" then
+        ComponentSetValue2(self.ability_component, key, GameGetFrameNum() + value)
+        ComponentSetValue2(self.ability_component, "mReloadFramesLeft", value)
+        ComponentSetValue2(self.ability_component, "reload_time_frames", value)
+      else
+        ComponentSetValue2(self.ability_component, key, value)
+      end
     end,
     gunaction_config = function(key, value)
       ComponentObjectSetValue2(self.ability_component, "gunaction_config", key, value)
@@ -622,7 +648,11 @@ function wand:_GetProperty(key)
   local mapped_key = variable_mappings[key].name
   local target_getters = {
     ability_component = function(key)
-      return ComponentGetValue2(self.ability_component, key, value)
+      if key == "mNextFrameUsable" or key == "mReloadNextFrameUsable" then
+        return (math.max(0, ComponentGetValue2(self.ability_component, key) - GameGetFrameNum()))
+      else
+        return ComponentGetValue2(self.ability_component, key)
+      end
     end,
     gunaction_config = function(key)
       return ComponentObjectGetValue2(self.ability_component, "gunaction_config", key)
@@ -1075,6 +1105,15 @@ function wand:Serialize()
   )
 end
 
+local function get_held_wand()
+	local player = EntityGetWithTag("player_unit")[1]
+  if player then
+    local inventory2_comp = EntityGetFirstComponentIncludingDisabled(player, "Inventory2Component")
+    local active_item = ComponentGetValue2(inventory2_comp, "mActiveItem")
+    return entity_is_wand(active_item) and wand:new(active_item)
+  end
+end
+
 return setmetatable({}, {
   __call = function(self, from, rng_seed_x, rng_seed_y)
     return wand:new(from, rng_seed_x, rng_seed_y)
@@ -1085,7 +1124,9 @@ return setmetatable({}, {
   __index = function(self, key)
     return ({
       Deserialize = deserialize,
-      RenderTooltip = render_tooltip
+      RenderTooltip = render_tooltip,
+      IsWand = entity_is_wand,
+      GetHeldWand = get_held_wand,
     })[key]
   end
 })

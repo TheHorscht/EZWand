@@ -1,3 +1,10 @@
+v1.5.0:
+- FIX EZWand.lua:257: table index is nil
+- Add EZWand.IsWand(entity_id) function
+- Add EZWand.GetHeldWand() function
+- Add wand.currentCastDelay property
+- Add wand.currentRechargeTime property
+
 v1.4.1:
 - FIX Spells not updating when wand is being held
 

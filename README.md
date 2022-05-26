@@ -1,4 +1,4 @@
-# EZWand v1.4.1
+# EZWand v1.5.0
 
 A utility library for mod developers of Noita which simplifies the workflow of creating and manipulating wands. Use at your own risk I don't want to be responsible for your mod breaking :)
 
@@ -115,6 +115,9 @@ end
 ```
 ### Misc
 ```lua
+-- Returns a boolean whether an entity is a wand or not
+EZWand.IsWand(entity_id)
+local wand = EZWand.GetHeldWand() -- either nil if not holding a wand or an EZWand object
 local cloned_wand = wand:Clone()
 -- Applies an appropriate Sprite using the games own algorithm
 -- based on capacity etc, use this after changing properties,
@@ -138,18 +141,21 @@ The names for the properties resemble the one found ingame, not the ones on the 
 ```lua
   wand.shuffle -- true or false
   wand.spellsPerCast
-  -- in frames, ingame values are based on 60 FPS, so 60 would be 1.0s
+  -- In frames, ingame values are based on 60 FPS, so 60 would be 1.0s
   wand.castDelay
-  -- same as castDelay
+   -- Returns the current cast delay in frames, can also be set to change the current cast delay
+  wand.currentCastDelay
+  -- Same as castDelay
   wand.rechargeTime
+  wand.currentRechargeTime
   wand.manaMax
   wand.mana
   wand.manaChargeSpeed
   wand.capacity
-  -- number like -13.2 without "DEG"
+  -- Number like -13.2 without "DEG"
   wand.spread
   wand.speedMultiplier
-  -- properties to access underlying entity/component ids:
+  -- Properties to access underlying entity/component ids:
   wand.entity_id
   wand.ability_component
 ```

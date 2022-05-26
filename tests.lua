@@ -94,7 +94,9 @@ function test_constructors()
   assert(wand.ability_component ~= nil)
   -- Check if defaults were set
   for k,v in pairs(wand_props) do
-    assert(wand[k] == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
+    if v.default then
+      assert(wand[k] == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
+    end
   end
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 0, "Spells count expected to be 0, got: " .. spells_count)
@@ -106,7 +108,9 @@ function test_constructors()
   assert(wand.entity_id ~= nil)
   assert(wand.ability_component ~= nil)
   for k,v in pairs(wand_props) do
-    assert(wand[k] == v.default)
+    if v.default then
+      assert(wand[k] == v.default, string.format("Constructor didn't set default values for %s. Given: %s, Expected: %s", k, wand[k], v.default))
+    end
   end
   spells_count, attached_spells_count = wand:GetSpellsCount()
   assert(spells_count == 0)
