@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.5.0   #######
+-- #######   EZWand version v1.5.1   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -645,6 +645,9 @@ function wand:_SetProperty(key, value)
 end
 -- Retrieves the actual property from the component or object
 function wand:_GetProperty(key)
+  if not variable_mappings[key] then
+    error(("EZWand has no property '%s'"):format(key), 4)
+  end
   local mapped_key = variable_mappings[key].name
   local target_getters = {
     ability_component = function(key)

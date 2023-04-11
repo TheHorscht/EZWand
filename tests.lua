@@ -455,6 +455,14 @@ function test_UpdateSprite(wand)
   assert(e == 0)
 end
 
+function test_wrong_accessor(wand)
+  local success, err_msg = pcall(function()
+    local a = wand.something
+  end)
+  assert(success == false)
+  assert(err_msg and err_msg:find("EZWand has no property 'something'"))
+end
+
 function test_Everything(wand) -- Gets called multiple times from inside test_constructors, DON'T CALL THIS YOURSELF
   test_getters_and_setters(wand)
   test_GetProperties(wand)
@@ -469,6 +477,7 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_DetachSpells_does_not_reduce_capacity(wand)
   test_RemoveSpellAtIndex(wand)
   test_UpdateSprite(wand)
+  test_wrong_accessor(wand)
 end
 
 function test_extract_spells_from_vararg()
