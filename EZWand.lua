@@ -452,20 +452,23 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   -- /Always casts
   -- Spells
   local spell_icon_scale = 0.711
-  local background_scale = 0.768
-  GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + last_icon_height + 7 + add_some, true)
+  local background_scale = 0.7685
+  GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + last_icon_height + 7 + add_some + 0.05, true)
   local row = 0
   for i=1, wand.props.capacity do
     GuiZSetForNextWidget(gui, 9)
-    GuiImage(gui, new_id(), -0.3, -0.5, "data/ui_gfx/inventory/inventory_box.png", 1, background_scale, background_scale)
+    GuiImage(gui, new_id(), -0.3, -0.4, "data/ui_gfx/inventory/inventory_box.png", 0.95, background_scale, background_scale)
     update_bounds()
-    if wand.spells[i] then
-      local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
-      x = x + 0.3
-      y = y + 0.5
-      local item_bg_icon = get_spell_bg(wand.spells[i])
-      GuiZSetForNextWidget(gui, 8.5)
-      GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+    local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
+    x = x + 0.3
+    y = y + 0.4
+    local item_bg_icon = get_spell_bg(wand.spells[i])
+    GuiZSetForNextWidget(gui, 8.5)
+    GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+    if not wand.spells[i] or wand.spells[i] == "" then
+      -- Render an invisible (alpha = 0.0001) item just so it counts for the auto-layout
+      GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.0001, background_scale + 0.01, background_scale + 0.01)
+    else
       -- Background / Spell type border
       GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.8, background_scale + 0.01, background_scale + 0.01)
       GuiZSetForNextWidget(gui, 8)
@@ -477,7 +480,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       row = row + 1
       GuiLayoutEnd(gui)
       _, _, _, _, last_icon_y, last_icon_width, last_icon_height = GuiGetPreviousWidgetInfo(gui)
-      GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + 19.7 * spell_icon_scale, true)
+      GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + 22.5 * spell_icon_scale, true)
     end
   end
   GuiLayoutEnd(gui)
