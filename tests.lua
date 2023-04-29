@@ -463,6 +463,11 @@ function test_wrong_accessor(wand)
   assert(err_msg and err_msg:find("EZWand has no property 'something'"))
 end
 
+-- No good way to test this except to make sure it doesn't throw errors
+function test_RenderTooltip(wand)
+  wand:RenderTooltip(5, 5)
+end
+
 function test_Everything(wand) -- Gets called multiple times from inside test_constructors, DON'T CALL THIS YOURSELF
   test_getters_and_setters(wand)
   test_GetProperties(wand)
@@ -478,6 +483,7 @@ function test_Everything(wand) -- Gets called multiple times from inside test_co
   test_RemoveSpellAtIndex(wand)
   test_UpdateSprite(wand)
   test_wrong_accessor(wand)
+  test_RenderTooltip(wand)
 end
 
 function test_extract_spells_from_vararg()

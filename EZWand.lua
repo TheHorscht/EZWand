@@ -309,6 +309,14 @@ end
 -- To get this easily you can use EZWand.Deserialize(EZWand(wand):Serialize())
 -- Better cache it though, it's not super expensive but...
 local function render_tooltip(origin_x, origin_y, wand, gui_)
+  origin_x = tonumber(origin_x)
+  if not origin_x then
+    error("RenderTooltip: Argument x is required and must be a number", 2)
+  end
+  origin_y = tonumber(origin_y)
+  if not origin_y then
+    error("RenderTooltip: Argument y is required and must be a number", 2)
+  end
   -- gui = gui or GuiCreate()
   gui = gui_ or gui or GuiCreate()
   if not gui_ then
@@ -1145,6 +1153,13 @@ local function get_held_wand()
     local inventory2_comp = EntityGetFirstComponentIncludingDisabled(player, "Inventory2Component")
     local active_item = ComponentGetValue2(inventory2_comp, "mActiveItem")
     return entity_is_wand(active_item) and wand:new(active_item)
+  end
+end
+
+function wand:RenderTooltip(origin_x, origin_y, gui_)
+  local success, error_msg = pcall(render_tooltip, origin_x, origin_y, deserialize(self:Serialize()), gui_)
+  if not success then
+    error(error_msg, 2)
   end
 end
 
