@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.6.0   #######
+-- #######   EZWand version v1.7.0   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")

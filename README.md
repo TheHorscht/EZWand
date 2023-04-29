@@ -1,4 +1,4 @@
-# EZWand v1.6.0
+# EZWand v1.7.0
 
 A utility library for mod developers of Noita which simplifies the workflow of creating and manipulating wands. Use at your own risk I don't want to be responsible for your mod breaking :)
 
@@ -164,14 +164,16 @@ You can always use your regular functions like EntityGetComponent etc using
 EntityHasTag(wand.entity_id, "wand")
 ```
 ## Rendering a wand tooltip
-To render a wand tooltip you can use EZWand.RenderTooltip()
+To render a wand tooltip you can use EZWand.RenderTooltip() to render a tooltip based on some predefined properties (no need for the wand to exist), or you can use
+wand:RenderTooltip() to render the tooltip of an existing wand.
 It creates its own gui object, so no need to provide one. Just call it every frame.
 Spell tooltips don't work because they're hardcoded and we can't access info about them.
 If you're rendering your own GUI alongside this, it's recommended to pass in your gui to prevent mouse events from not working correctly.
 ```lua
 EZWand.RenderTooltip(x, y, props[, gui])
+wand:RenderTooltip(x, y[, gui])
 ```
-Where props is a table just like the one you get when using EZWand.Deserialize(), so to create that table you could do this (and cache the result):
+Where props is a table just like the one you get when using EZWand.Deserialize(), so to create that table you could do this (and better cache the result):
 ```lua
 local props = EZWand.Deserialize(EZWand(wand):Serialize())
 EZWand.RenderTooltip(x, y, props, gui)

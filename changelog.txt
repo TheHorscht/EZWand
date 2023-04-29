@@ -1,3 +1,10 @@
+v1.7.0:
+- Add wand:RenderTooltip(x, y, gui) as a shortcut for rendering an existing wand
+- Wand tooltip will now correctly show empty slots and spells in the correct slots
+- Microchanges to wand tooltip spell slot positioning and sizing to better match the original
+- Forgot to mention that since 1.6.0 the output of EZWand.Deserialize() was changed slightly,
+  the spells table now contains empty slots as empty strings.
+
 v1.6.0:
 - Make serializing/deserializing keep the positions of spells on the wand
 
