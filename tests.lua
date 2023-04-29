@@ -268,7 +268,7 @@ function test_GetSpells(wand)
   wand:AddSpells(to_add)
   spells, attached_spells = wand:GetSpells()
   for i,v in ipairs(to_add) do
-    assert(v == spells[i].action_id, string.format("Expected %s, got %s", v, spells[i].action_id))
+    assert(v == spells[i].action_id, string.format("Expected %s, got %s, i=%d", v, spells[i].action_id, i))
   end
 
   wand:DetachSpells()
@@ -499,7 +499,7 @@ function test_extract_spells_from_vararg()
 end
 
 function test_serialize_deserialize()
-  local wand = Wand({
+  local base_stats = {
     shuffle = false,
     spellsPerCast = 1,
     castDelay = 20,
@@ -510,18 +510,21 @@ function test_serialize_deserialize()
     capacity = 10,
     spread = 10,
     speedMultiplier = 1,
-  })
-  wand:AddSpells("BOMB", 2, "BLACK_HOLE")
+  }
+  local wand = Wand(base_stats)
+  wand:AddSpells("", 2, "BOMB", 2, "BLACK_HOLE")
   wand:AttachSpells("LIGHT_BULLET", "BULLET_TIMER", 2)
-  wand:SetSprite("mods/what/whatever.png", 1, 2, 3, 4)
+  wand:SetSprite("data/items_gfx/wands/wand_0666.png", 1, 2, 3, 4)
   local serialized = wand:Serialize()
-  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;mods/what/whatever.png;1;2;3;4"
+  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;,,BOMB,BOMB,BLACK_HOLE,,,,,;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0666.png;1;2;3;4"
+  -- First test if the serialized string matches what we expect
   assert(serialized == expected, string.format("\nExpected:\n%s\nGot:\n%s", expected, serialized))
   EntityKill(wand.entity_id)
   wand = Wand(serialized)
+  -- Then try to construct the same wand again from the serialized version,
+  -- check if it's the same by serializing it again and comparing the serialized string
   local serialized = wand:Serialize()
-  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;BOMB,BOMB,BLACK_HOLE;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;mods/what/whatever.png;1;2;3;4"
-  assert(serialized == expected)
+  assert(serialized == expected, string.format("\nExpected:\n%s\nGot:\n%s", expected, serialized))
   EntityKill(wand.entity_id)
 end
 

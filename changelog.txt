@@ -1,3 +1,6 @@
+v1.6.0:
+- Make serializing/deserializing keep the positions of spells on the wand
+
 v1.5.1:
 - Add error message when trying to access property that doesn't exist
 

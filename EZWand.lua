@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.5.1   #######
+-- #######   EZWand version v1.6.0   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -22,7 +22,7 @@ local function filter_spells(spells)
   end
   local out = {}
   for i, spell in ipairs(spells) do
-    if spell_lookup[spell] then
+    if spell == "" or spell_lookup[spell] then
       table.insert(out, spell)
     end
   end
@@ -514,6 +514,26 @@ local function refresh_wand_if_in_inventory(wand_id)
   end
 end
 
+local function add_spell_at_pos(wand, action_id, pos)
+  local spells_on_wand = wand:GetSpells()
+  -- Check if there's space for one more spell
+  if wand.capacity == #spells_on_wand then
+    return false
+  end
+  -- Check if there's already a spell at the desired position
+  for i, spell in ipairs(spells_on_wand) do
+    if spell.inventory_x + 1 == pos then
+      return false
+    end
+  end
+  local action_entity_id = CreateItemActionEntity(action_id)
+  EntityAddChild(wand.entity_id, action_entity_id)
+  EntitySetComponentsWithTagEnabled(action_entity_id, "enabled_in_world", false)
+  local item_component = EntityGetFirstComponentIncludingDisabled(action_entity_id, "ItemComponent")
+  ComponentSetValue2(item_component, "inventory_slot", pos-1, 0)
+  return true
+end
+
 -- ##########################
 -- ####    UTILS END     ####
 -- ##########################
@@ -570,7 +590,11 @@ function wand:new(from, rng_seed_x, rng_seed_y)
       -- Filter spells whose ID no longer exist (for instance when a modded spellpack was disabled)
       values.spells = filter_spells(values.spells)
       values.always_cast_spells = filter_spells(values.always_cast_spells)
-      o:AddSpells(values.spells)
+      for i, action_id in ipairs(values.spells) do
+        if action_id ~= "" then
+          add_spell_at_pos(o, action_id, i)
+        end
+      end
       o:AttachSpells(values.always_cast_spells)
       o:SetSprite(values.sprite_image_file, values.offset_x, values.offset_y, values.tip_x, values.tip_y)
     -- Load a wand by xml
@@ -1067,8 +1091,12 @@ function wand:Serialize()
   local spells_string = ""
   local always_casts_string = ""
   local spells, always_casts = self:GetSpells()
+  local slots = {}
   for i, spell in ipairs(spells) do
-    spells_string = spells_string .. (i == 1 and "" or ",") .. spell.action_id
+    slots[spell.inventory_x+1] = spell
+  end
+  for i=1, self.capacity do
+    spells_string = spells_string .. (i == 1 and "" or ",") .. (slots[i] and slots[i].action_id or "")
   end
   for i, spell in ipairs(always_casts) do
     always_casts_string = always_casts_string .. (i == 1 and "" or ",") .. spell.action_id
