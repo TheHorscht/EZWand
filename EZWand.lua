@@ -459,8 +459,8 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   end
   -- /Always casts
   -- Spells
-  local spell_icon_scale = 0.711
-  local background_scale = 0.7685
+  local spell_icon_scale = 0.70066976733398
+  local background_scale = 0.76863774490356
   GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + last_icon_height + 7 + add_some + 0.05, true)
   local row = 0
   for i=1, wand.props.capacity do
@@ -468,27 +468,27 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     GuiImage(gui, new_id(), -0.3, -0.4, "data/ui_gfx/inventory/inventory_box.png", 0.95, background_scale, background_scale)
     update_bounds()
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
-    x = x + 0.3
+    x = x + 0.32479339599609
     y = y + 0.4
     local item_bg_icon = get_spell_bg(wand.spells[i])
     GuiZSetForNextWidget(gui, 8.5)
     GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
     if not wand.spells[i] or wand.spells[i] == "" then
       -- Render an invisible (alpha = 0.0001) item just so it counts for the auto-layout
-      GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.0001, background_scale + 0.01, background_scale + 0.01)
+      GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.0001, background_scale, background_scale)
     else
       -- Background / Spell type border
-      GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.8, background_scale + 0.01, background_scale + 0.01)
+      GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.75, background_scale, background_scale)
       GuiZSetForNextWidget(gui, 8)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
-      GuiImage(gui, new_id(), x, y, (spell_lookup[wand.spells[i]] and spell_lookup[wand.spells[i]].icon) or "data/ui_gfx/gun_actions/unidentified.png", 1, spell_icon_scale, spell_icon_scale)
+      GuiImage(gui, new_id(), x + 0.11, y, (spell_lookup[wand.spells[i]] and spell_lookup[wand.spells[i]].icon) or "data/ui_gfx/gun_actions/unidentified.png", 0.8, spell_icon_scale, spell_icon_scale)
     end
     -- Start a new row after 10 spells
     if i % 10 == 0 then
       row = row + 1
       GuiLayoutEnd(gui)
       _, _, _, _, last_icon_y, last_icon_width, last_icon_height = GuiGetPreviousWidgetInfo(gui)
-      GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + 22.5 * spell_icon_scale, true)
+      GuiLayoutBeginHorizontal(gui, last_icon_x, y + 14.00, true)
     end
   end
   GuiLayoutEnd(gui)
