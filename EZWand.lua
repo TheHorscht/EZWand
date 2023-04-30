@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.7.0   #######
+-- #######   EZWand version v1.7.1   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -400,14 +400,21 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     local _, _, _, x, y, w, h = GuiGetPreviousWidgetInfo(gui)
     most_right_text_x = math.max(most_right_text_x, x + w)
   end
+  local function format_cast_delay_and_recharge_time(input)
+    local pattern = "%.2f"
+    if input % 1 == 0 then
+      return input .. ".0 s"
+    end
+    return (pattern):format(input) .. " s"
+  end
   gui_text_with_shadow(gui, 0, 5, GameTextGetTranslatedOrNot(wand.props.shuffle and "$menu_yes" or "$menu_no"), 1)
   local _, _, _, _, no_text_y = GuiGetPreviousWidgetInfo(gui)
   update_most_right_text_x()
   gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.spellsPerCast), 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.2f s"):format(wand.props.castDelay / 60), 1)
+  gui_text_with_shadow(gui, 0, margin, format_cast_delay_and_recharge_time(wand.props.castDelay / 60), 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.2f s"):format(wand.props.rechargeTime / 60), 1)
+  gui_text_with_shadow(gui, 0, margin, format_cast_delay_and_recharge_time(wand.props.rechargeTime / 60), 1)
   update_most_right_text_x()
   gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.manaMax), 1)
   update_most_right_text_x()

@@ -1,3 +1,6 @@
+v1.7.1:
+- FIX wand tooltip spell rendering again after borking it in the last update
+
 v1.7.0:
 - Add wand:RenderTooltip(x, y, gui) as a shortcut for rendering an existing wand
 - Wand tooltip will now correctly show empty slots and spells in the correct slots
