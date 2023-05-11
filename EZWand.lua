@@ -328,7 +328,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     spell_lookup = {}
     dofile_once("data/scripts/gun/gun_actions.lua")
     for i, action in ipairs(actions) do
-      spell_lookup[action.id] = { 
+      spell_lookup[action.id] = {
         icon = action.sprite,
         type = action.type
       }
@@ -446,7 +446,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       end
       local item_bg_icon = get_spell_bg(spell)
       local w, h = GuiGetImageDimensions(gui, item_bg_icon, background_scale)
-      local x, y 
+      local x, y
       if i == 1 then
         x, y = ac_icon_x + ac_icon_width + 3, math.floor(ac_icon_y - ac_icon_height / 2 + 2)
       else
@@ -854,8 +854,7 @@ function wand:GetSpells()
 		local permanent = false
     local item_action_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemActionComponent")
     if item_action_component then
-      local val = ComponentGetValue2(item_action_component, "action_id")
-      action_id = val
+      action_id = ComponentGetValue2(item_action_component, "action_id")
     end
     local inventory_x, inventory_y = -1, -1
     local item_component = EntityGetFirstComponentIncludingDisabled(spell, "ItemComponent")
@@ -1058,7 +1057,7 @@ function wand:PlaceAt(x, y)
 	EntitySetComponentIsEnabled(self.entity_id, sprite_component, true)
   local light_component = EntityGetFirstComponentIncludingDisabled(self.entity_id, "LightComponent")
   EntitySetComponentIsEnabled(self.entity_id, light_component, true)
-  
+
   ComponentSetValue(item_component, "has_been_picked_by_player", "0")
   ComponentSetValue(item_component, "play_hover_animation", "1")
   ComponentSetValueVector2(item_component, "spawn_pos", x, y)
