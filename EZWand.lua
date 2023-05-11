@@ -870,6 +870,34 @@ function wand:GetSpells()
 			end
 		end
   end
+
+  local function assign_inventory_x(t)
+    local a = {}
+    for i, v in ipairs(t) do
+      if v.inventory_x > 0 then
+        a[v.inventory_x+1] = v
+      end
+    end
+    local inventory_x = 1
+    for i, v in ipairs(t) do
+      if v.inventory_x == 0 then
+        while a[inventory_x] do
+          inventory_x = inventory_x + 1
+        end
+        v.inventory_x = inventory_x-1
+        a[inventory_x] = v
+      end
+    end
+    for i = #t, 1, -1 do
+      if not t[i].inventory_x then
+        table.remove(t, i)
+      end
+    end
+  end
+  -- When a wand is spawned its spell's inventory_x is always set to 0, only once the inventory is opened
+  -- is inventory_x assigned correctly to all spells, so to fake that we go through all the spells manually
+  -- and assign inventory_x to either what it was set as or by the order the entities appear on the wand
+  assign_inventory_x(spells)
   table.sort(spells, function(a, b) return a.inventory_x < b.inventory_x end)
 	return spells, always_cast_spells
 end
