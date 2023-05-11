@@ -14,15 +14,15 @@ dofile_once("data/scripts/gun/procedural/wands.lua")
 -- Removes spells from a table whose ID is not found in the gun_actions table
 local function filter_spells(spells)
   dofile_once("data/scripts/gun/gun_actions.lua")
-  if not spell_lookup then
-    spell_lookup = {}
+  if not spell_exist_lookup then
+    spell_exist_lookup = {}
     for i, v in ipairs(actions) do
-      spell_lookup[v.id] = true
+      spell_exist_lookup[v.id] = true
     end
   end
   local out = {}
   for i, spell in ipairs(spells) do
-    if spell == "" or spell_lookup[spell] then
+    if spell == "" or spell_exist_lookup[spell] then
       table.insert(out, spell)
     end
   end
