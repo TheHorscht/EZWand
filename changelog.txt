@@ -1,3 +1,9 @@
+v1.7.2:
+- inventory_x of spells only gets set once the inventory is opened after the wand has been
+  added to the players inventory, to work around that, spells returned from GetSpells() will
+  now auto-calculate the inventory_x slots.
+- FIX some bug that I don't even know what kinda issues it would cause
+
 v1.7.1:
 - FIX wand tooltip spell rendering again after borking it in the last update
 
