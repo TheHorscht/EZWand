@@ -1,3 +1,8 @@
+UNRELEASED
+- Offset tooltip slightly so the top left corner is actually at the specified x, y coordinates
+- Modified the tooltip again slightly to try and make always casts pixel perfect
+- Add EZWand.GetTooltipSize(wandprops, gui) and wand:GetTooltipSize(gui)
+
 v1.7.2:
 - inventory_x of spells only gets set once the inventory is opened after the wand has been
   added to the players inventory, to work around that, spells returned from GetSpells() will
