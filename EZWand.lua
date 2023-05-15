@@ -350,6 +350,14 @@ local function get_spell_bg(action_id)
 	return spell_type_bgs[spell_lookup[action_id] and spell_lookup[action_id].type] or spell_type_bgs[ACTION_TYPE_OTHER]
 end
 
+local function format_cast_delay_and_recharge_time(input)
+  local pattern = "%.2f"
+  if input % 1 == 0 then
+    return input .. ".0 s"
+  end
+  return (pattern):format(input) .. " s"
+end
+
 local last_gui_frame_started = 0
 local function gui_start_frame_if_it_hasnt_been_started_already(gui)
   local this_frame_num = GameGetFrameNum()
