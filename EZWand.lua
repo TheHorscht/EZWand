@@ -444,7 +444,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_, z)
     GuiText(gui, x, y, text)
     GuiZSetForNextWidget(gui, z)
     GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
-    GuiColorSetForNextWidget(gui, 0, 0, 0, 0.83)
+    GuiColorSetForNextWidget(gui, 0.005, 0, 0, 0.83)
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
     GuiText(gui, x, y + 1, text)
   end
@@ -1353,6 +1353,529 @@ function wand:RenderTooltip(origin_x, origin_y, gui_, z)
   end
 end
 
+local function to_int(v)
+  return v - (v % 1)
+end
+
+local action_metadata = {}
+local action_data = {}
+function get_action_metadata(action_id)
+  dofile_once("data/scripts/gun/gun.lua")
+  dofile_once("data/scripts/gun/gun_actions.lua")
+  if not action_data[action_id] then
+    for i, action in ipairs(actions) do
+      if action.id == action_id then
+        action_data[action_id] = action
+        break
+      end
+    end
+  end
+  if not action_data[action_id] then
+    return
+  end
+  if not action_metadata[action_id] then
+    local metadata = {
+      c = {},
+      projectiles = nil,
+      shot_effects = {},
+    }
+    local skip_values = {
+      damage_by_type = true,
+      mTriggers = true,
+      config = true,
+      config_explosion = true,
+      damage_critical = true,
+    }
+    reflecting = true
+    local function p(v, a)
+      local a = math.pow(10, a)
+      return math.floor(v * a + 0.5) / a
+    end
+    Reflection_RegisterProjectile = function(filepath)
+      metadata.projectiles = metadata.projectiles or {}
+      if metadata.projectiles[filepath] == nil then
+        local projectile_entity = EntityCreateNew()
+        EntityApplyTransform(projectile_entity, 14600, -60000)
+        EntityLoadToEntity(filepath, projectile_entity)
+        local projectile = EntityGetFirstComponent(projectile_entity, "ProjectileComponent")
+        if projectile then
+          metadata.projectiles[filepath] = {}
+          for k, v in pairs(ComponentGetMembers(projectile) or {}) do
+            if skip_values[k] ~= true then
+              metadata.projectiles[filepath][k] = ComponentGetValue2(projectile, k)
+            end
+          end
+          metadata.projectiles[filepath].damage = math.floor((metadata.projectiles[filepath].damage or 0) * 25 + 0.501)
+          metadata.projectiles[filepath].projectiles = 1
+          metadata.projectiles[filepath].lifetime = ComponentGetValue2(projectile, "mStartingLifetime")
+          ComponentSetValue2(projectile, "on_death_explode", false)
+          ComponentSetValue2(projectile, "on_lifetime_out_explode", false)
+          ComponentSetValue2(projectile, "collide_with_entities", false)
+          ComponentSetValue2(projectile, "collide_with_world", false)
+          ComponentSetValue2(projectile, "lifetime", 999)
+
+          local damage_by_type = ComponentObjectGetMembers(projectile, "damage_by_type")
+          if damage_by_type then
+            for type, value in pairs(damage_by_type or {}) do
+              metadata.projectiles[filepath]["damage_" .. type] = math.floor((ComponentObjectGetValue2(projectile,
+                "damage_by_type", type) or 0) * 25 + 0.5)
+            end
+          end
+
+          local config_explosion = ComponentObjectGetMembers(projectile, "config_explosion")
+          if config_explosion then
+            local damage = ComponentObjectGetValue2(projectile, "config_explosion", "damage")
+            local explosion_radius = ComponentObjectGetValue2(projectile, "config_explosion", "explosion_radius")
+            if (damage == 5 and explosion_radius == 20) then
+              -- Those are default values so we assume it wasn't set, so set it to 0
+              damage = 0
+              explosion_radius = 0
+            end
+            if damage == 0 then
+              explosion_radius = 0
+            end
+            if explosion_radius == 0 then
+              damage = 0
+            end
+            damage = to_int(p(damage, 6) * 25)
+            metadata.projectiles[filepath].damage_explosion = damage
+            metadata.projectiles[filepath].explosion_radius = explosion_radius
+          end
+        end
+        local lightning_component = EntityGetFirstComponent(projectile_entity, "LightningComponent")
+        if lightning_component then
+          local config_explosion = ComponentObjectGetMembers(lightning_component, "config_explosion")
+          if config_explosion then
+            local damage = ComponentObjectGetValue2(lightning_component, "config_explosion", "damage")
+            local explosion_radius = ComponentObjectGetValue2(lightning_component, "config_explosion", "explosion_radius")
+            if (damage == 5 and explosion_radius == 20) then
+              -- Those are default values so we assume it wasn't set, so set it to 0
+              damage = 0
+              explosion_radius = 0
+            end
+            if damage == 0 then
+              explosion_radius = 0
+            end
+            if explosion_radius == 0 then
+              damage = 0
+            end
+            damage = to_int(p(damage, 7) * 25)
+            metadata.projectiles[filepath].damage_explosion = damage
+            metadata.projectiles[filepath].explosion_radius = explosion_radius
+            -- metadata.projectiles[filepath].damage_explosion = ComponentObjectGetValue2(lightning_component,
+            --   "config_explosion", "damage")
+            -- metadata.projectiles[filepath].explosion_radius = ComponentObjectGetValue2(lightning_component,
+            --   "config_explosion", "explosion_radius")
+            -- if metadata.projectiles[filepath].damage_explosion == 5 and metadata.projectiles[filepath].explosion_radius == 20 then
+            --   -- Those are default values so we assume it wasn't set, so set it to 0
+            --   metadata.projectiles[filepath].damage_explosion = 0
+            --   metadata.projectiles[filepath].explosion_radius = 0
+            -- end
+            -- if metadata.projectiles[filepath].damage_explosion == 0 or metadata.projectiles[filepath].damage_radius == 0 then
+            --   metadata.projectiles[filepath].damage_explosion = 0
+            --   metadata.projectiles[filepath].explosion_radius = 0
+            -- end
+            -- local v = metadata.projectiles[filepath].damage_explosion
+            -- v = p(v, 7)
+            -- metadata.projectiles[filepath].damage_explosion = to_int(v * 25)
+          end
+        end
+        EntityKill(projectile_entity)
+      else
+        metadata.projectiles[filepath].projectiles = metadata.projectiles[filepath].projectiles + 1
+      end
+    end
+    local _shot_effects = shot_effects
+    local _c = c
+    c = {}
+    shot_effects = {}
+    current_reload_time = 0
+    local draws = 0
+    local _draw_actions = draw_actions
+    local _EntityLoad = EntityLoad
+    draw_actions = function(how_many) draws = draws + how_many end
+    EntityLoad = function() end
+    reset_modifiers(c)
+    ConfigGunShotEffects_Init(shot_effects)
+    action_data[action_id].action()
+    EntityLoad = _EntityLoad
+    draw_actions = _draw_actions
+    for k, v in pairs(c) do
+      if k:match("damage_.+_add") then
+        local dmg = c[k] * 25
+        if dmg > 0 then
+          c[k] = math.floor(dmg + 0.5)
+        else
+          c[k] = math.floor(dmg)
+        end
+      end
+    end
+    c.draw_actions = draws
+    c.reload_time = current_reload_time
+    c.mana = action_data[action_id].mana or 10
+    c.action_type = action_data[action_id].type
+    c.action_max_uses = action_data[action_id].max_uses
+    metadata.c = c
+    c = _c
+    reflecting = false
+    for k, v in pairs(metadata.projectiles or {}) do
+      metadata.projectile = {}
+      for k, v in pairs(v) do
+        metadata.projectile[k] = v
+      end
+    end
+    action_metadata[action_id] = metadata
+  end
+  return action_metadata[action_id]
+end
+
+local projectile_type_lookup = {
+  [ACTION_TYPE_PROJECTILE] = "$inventory_actiontype_projectile",
+  [ACTION_TYPE_STATIC_PROJECTILE] = "$inventory_actiontype_staticprojectile",
+  [ACTION_TYPE_MODIFIER] = "$inventory_actiontype_modifier",
+  [ACTION_TYPE_DRAW_MANY] = "$inventory_actiontype_drawmany",
+  [ACTION_TYPE_MATERIAL] = "$inventory_actiontype_material",
+  [ACTION_TYPE_OTHER] = "$inventory_actiontype_other",
+  [ACTION_TYPE_UTILITY] = "$inventory_actiontype_utility",
+  [ACTION_TYPE_PASSIVE] = "$inventory_actiontype_passive",
+}
+
+local function get_prop(key1, key2, nil_value, format_func)
+  return function(md)
+    local value = md[key1]
+    if not value or value == nil_value then return end
+    if type(value) == "table" then
+      value = value[key2]
+      if not value or value == nil_value or (type(nil_value) == "function" and nil_value(value)) then return end
+    end
+    if format_func then
+      value = format_func(value)
+    end
+    return value
+  end
+end
+
+local function sign_str(v)
+  return (v > 0 and "+" or "") .. v
+end
+
+local function one_or_two_digits(v)
+  local digits = 2
+  v = tonumber(v)
+  if v % 1 == 0 then
+    digits = 1
+  end
+  return ("%." .. digits .. "f"):format(v)
+end
+
+local function time_str(v)
+  v = tonumber(v)
+  return GameTextGet("$inventory_seconds", one_or_two_digits(v / 60))
+end
+
+local a = {
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_action_type.png", text = "$inventory_actiontype", display_func = function(md)
+    return GameTextGetTranslatedOrNot(projectile_type_lookup[md.c.action_type])
+  end },
+  { just_space = true, group = 1 }, -- if any of the elements between the same just_space group were rendred, add a space in the second instance
+  { icon = "data/ui_gfx/inventory/icon_action_max_uses.png", text = "$inventory_usesremaining", display_func = get_prop("c", "action_max_uses", nil) },
+  { just_space = true, group = 1 },
+  { just_space = true, group = 2 },
+  { icon = "data/ui_gfx/inventory/icon_mana_drain.png", text = "$inventory_manadrain", display_func = get_prop("c", "mana") },
+  { just_space = true, group = 2 },
+  { just_space = true, group = 3 },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("projectile", "damage", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("projectile", "damage_explosion", 0) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("projectile", "explosion_radius", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_dmg_melee", display_func = get_prop("projectile", "damage_melee", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_dmg_slice", display_func = get_prop("projectile", "damage_slice", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_dmg_drill", display_func = get_prop("projectile", "damage_drill", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_dmg_fire", display_func = get_prop("projectile", "damage_fire", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_dmg_ice", display_func = get_prop("projectile", "damage_ice", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_dmg_healing", display_func = get_prop("projectile", "damage_healing", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_dmg_curse", display_func = get_prop("projectile", "damage_curse", 0) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("projectile", "direction_random_rad", 0, function(v) return GameTextGet("$inventory_degrees", ("%.1f"):format(math.deg(v))) end) },
+  { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_speed", display_func = function(md)
+    local speed_min = get_prop("projectile", "speed_min")(md)
+    if not speed_min then return nil end
+    local speed_max = get_prop("projectile", "speed_max")(md)
+    local speed = math.floor((speed_max + speed_min) / 2)
+    if speed == 0 then
+      return
+    else
+      return speed
+    end
+  end },
+  { just_space = true, group = 3 },
+  { just_hack = true }, -- if none of these below get rendered, add some extra vertical space, because that's how the OG game does it :)
+  { icon = "data/ui_gfx/inventory/icon_fire_rate_wait.png", text = "$inventory_mod_castdelay", display_func = get_prop("c", "fire_rate_wait", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_reload_time.png", text = "$inventory_mod_rechargetime", display_func = get_prop("c", "reload_time", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_mod_speed", display_func = get_prop("c", "speed_multiplier", 1, function(v) return "x " .. one_or_two_digits(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("c", "explosion_radius", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_mod_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", 0) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_mod_spread", display_func = get_prop("shot_effects", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
+  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("c", "knockback_force", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("shot_effects", "knockback_force", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. "%" end) },
+}
+
+local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
+  if not shit then
+    shit = true
+    local metadata = get_action_metadata("ROCKET")
+    local inspect = dofile_once("mods/ARPGInventory/inspect.lua")
+    print(inspect(metadata))
+  end
+
+  if type(action_id) ~= "string" then
+    error("RenderSpellTooltip: Argument action_id is required and must be a string", 2)
+  end
+  origin_x = tonumber(origin_x)
+  if not origin_x then
+    error("RenderSpellTooltip: Argument origin_x is required and must be a number", 2)
+  end
+  origin_y = tonumber(origin_y)
+  if not origin_y then
+    error("RenderSpellTooltip: Argument origin_y is required and must be a number", 2)
+  end
+
+  local id = 1
+  local function new_id()
+    id = id + 1
+    return id
+  end
+
+  local z = -100
+  local text_lightness = 0.81
+  local function gui_text_with_shadow(gui, x, y, text, lightness)
+    lightness = lightness or text_lightness
+    GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
+    GuiText(gui, x, y, text)
+    GuiZSetForNextWidget(gui, z + 1)
+    GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+    GuiColorSetForNextWidget(gui, 0.005, 0, 0, 0.83)
+    local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
+    GuiText(gui, x, y + 1, text)
+  end
+  local is_description = false
+  local function gui_text_with_shadow_adjusted(gui, x, y, text, lightness)
+    lightness = lightness or text_lightness
+    local adjust
+    if is_description then
+      adjust = { ["!"] = 1 }
+    else
+      adjust = { F = -1, L = 1, P = 1, ["1"] = 2}
+    end
+    local last_char_x, last_char_y, last_char_w
+    for i=1, #text do
+      local char = text:sub(i, i)
+      if i == 1 then
+        -- GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
+        -- GuiText(gui, x, y, char)
+        gui_text_with_shadow(gui, x, y, char)
+      else
+        local prev_char = text:sub(i-1, i-1)
+        local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+        GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
+        local offset = adjust[prev_char] or 0
+        gui_text_with_shadow(gui, last_x + last_w + offset, last_y - 1, char)
+        -- GuiText(gui, last_x + last_w + offset, last_y, char)
+        last_char_x, last_char_y, last_char_w = last_x, last_y, last_w
+      end
+    end
+    local last_char = text:sub(#text, #text)
+    local last_adjust = adjust[last_char]
+    if adjust[last_char] then
+      local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+      -- GuiImage(gui, new_id(), last_char_x + last_char_w, last_char_y, "data/ui_gfx/1px_white.png", 1, adjust[last_char], 1)
+      GuiColorSetForNextWidget(gui, 1, 1, 1, 0.000001)
+      GuiText(gui, last_x + adjust[last_char], last_y, last_char)
+    end
+    -- GuiZSetForNextWidget(gui, z + 1)
+    -- GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+    -- GuiColorSetForNextWidget(gui, 0.005, 0, 0, 0.83)
+    -- local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
+    -- GuiText(gui, x, y + 1, text)
+  end
+  origin_x = origin_x + 7 -- Border
+  origin_y = origin_y + 7
+  gui = gui_ or gui or GuiCreate()
+  if not gui_ then
+    gui_start_frame_if_it_hasnt_been_started_already(gui)
+  end
+  GuiZSet(gui, z)
+  GuiIdPushString(gui, "EZWand_spell_tooltip")
+
+  local x, y = origin_x, origin_y
+  local right, bottom = x, y
+  dofile_once("data/scripts/gun/gun_actions.lua")
+  local action
+  for i, a in ipairs(actions) do
+    if a.id == action_id then
+      action = a
+      break
+    end
+  end
+  local margin = -3
+  local spacing_empty_rows = 5
+  -- Get uses remaining
+  local uses_remaining = action.max_uses
+  if it_a_card_item then
+    EntityGetFirstComponentIncludingDisabled(card_entity, "ItemComponent")
+    uses_remaining = ComponentGetValue2(card_entity, "uses_remaining")
+  end
+  local spell_name = GameTextGetTranslatedOrNot(action.name):upper()
+  if uses_remaining then
+    spell_name = spell_name .. (" (%d)"):format(uses_remaining)
+  end
+  GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
+  -- gui_text_with_shadow(gui, x, y, spell_name)
+  gui_text_with_shadow_adjusted(gui, x, y, spell_name)
+  local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+  right = math.max(right, last_x + last_w + 10)
+  -- right = math.max(right, last_x + last_w + 5)
+  y = y + last_h
+  GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
+  is_description = true
+  local description = GameTextGetTranslatedOrNot(action.description or "")
+  description = description:gsub("…", "...")
+  gui_text_with_shadow_adjusted(gui, x, y + 5, description)
+  is_description = false
+  local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+  right = math.max(right, last_x + last_w + 10)
+  -- right = math.max(right, last_x + last_w + 5)
+  y = y + last_h + 5
+  local icons_y = y
+  -- Icons / Property names
+  GuiBeginAutoBox(gui)
+  GuiLayoutBeginVertical(gui, x, y, true)
+  gui_text_with_shadow(gui, 0, margin, " ")
+  local elements = {}
+  local metadata = get_action_metadata(action_id)
+  local just_hack_on = false
+  local elements_in_group_rendered = {}
+  local current_group = 0
+  for i, v in ipairs(a) do
+    if v.just_space then
+      local group = v.group
+      if group ~= current_group then
+        -- start a new group
+        current_group = current_group + 1
+        elements_in_group_rendered[current_group] = 0
+      else
+        -- render space if any elements were rendered
+        if elements_in_group_rendered[group] > 0 then
+          table.insert(elements, { "", "", "" })
+        end
+      end
+    elseif v.just_hack then
+      -- start counting
+      just_hack_on = true
+    elseif not v.just_space then
+      local value = v.display_func(metadata)
+      if value then
+        if current_group > 0 then
+          elements_in_group_rendered[current_group] = elements_in_group_rendered[current_group] + 1
+        end
+        table.insert(elements, { v.icon, v.text, value, ignore_width = v.ignore_width })
+        just_hack_on = false
+      end
+    end
+  end
+  for i, v in ipairs(elements) do
+    local spacing = 0
+    if v[1] ~= "" then
+      GuiImage(gui, new_id(), 0, margin - 1, v[1], 1, 1, 1)
+      local _, _, _, wx, wy, w, h = GuiGetPreviousWidgetInfo(gui)
+      GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
+      gui_text_with_shadow(gui, w + 5, -h - 2, GameTextGetTranslatedOrNot(v[2]))
+    else
+      spacing = spacing_empty_rows
+    end
+    if i < #elements then
+      gui_text_with_shadow(gui, 0, margin - 5 + spacing, " ")
+    end
+  end
+  GuiLayoutEnd(gui)
+  GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "mods/ARPGInventory/1x1_invisible.png", "mods/ARPGInventory/1x1_invisible.png")
+  -- END of Icons / Property names
+  local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+  -- The left colum seems to have a minimum width
+  last_w = math.max(67, last_w)
+  if just_hack_on then
+    last_h = last_h + 5
+  end
+  y = y + last_h
+
+  local projectile_type_text = { x = 0, y = 0 }
+  -- Values
+  GuiBeginAutoBox(gui)
+  GuiLayoutBeginVertical(gui, last_x + last_w + 3, last_y + 3, true)
+  gui_text_with_shadow(gui, 0, margin, " ")
+  for i, v in ipairs(elements) do
+    local spacing = 0
+    if v[1] ~= "" then
+      GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
+      -- Mimic the jank of vanilla where the text "Static Proj." etc in the original
+      -- tooltips does not actually count toward the horizontal size
+      -- So, save the location where it WOULD be rendered, while still drawing something
+      -- to trigger the layouting etc and then draw the text later with Layout_NoLayouting
+      if i == 1 then
+        -- For the projectile type, only "Projectile" is used for width calculation
+        GuiColorSetForNextWidget(gui, 1, 1, 1, 0.000001)
+        GuiText(gui, 0, margin - 3, GameTextGetTranslatedOrNot("$inventory_actiontype_projectile"))
+        local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+        GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+        gui_text_with_shadow(gui, last_x, last_y, v[3])
+      elseif v.ignore_width then
+        GuiText(gui, 0, margin - 3, " ")
+        local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+        GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+        gui_text_with_shadow(gui, last_x, last_y, v[3])
+      else
+        gui_text_with_shadow(gui, 0, margin - 3, v[3])
+      end
+    else
+      spacing = spacing_empty_rows
+    end
+    if i < #elements then
+      gui_text_with_shadow(gui, 0, margin - 5 + spacing, " ")
+    end
+  end
+  GuiLayoutEnd(gui)
+  -- GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "data/ui_gfx/1px_white.png", "data/ui_gfx/1px_white.png")
+  GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "mods/ARPGInventory/1x1_invisible.png", "mods/ARPGInventory/1x1_invisible.png")
+  -- END of Values
+  local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+  right = math.max(right, last_x + last_w - 1)
+
+  -- Spell icon
+  local img_w, img_h = GuiGetImageDimensions(gui, action.sprite, 2)
+  GuiZSet(gui, z - 0.1)
+  GuiImage(gui, new_id(), right, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
+  -- GuiImage(gui, new_id(), right + 5, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
+  local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+  right = math.max(right, last_x + last_w)
+
+  GuiZSetForNextWidget(gui, z + 2)
+  GuiImageNinePiece(gui, new_id(), origin_x - 5, origin_y - 5, right - (origin_x - 5) + 5,  y - (origin_y - 5) + 5, 1)
+  GuiIdPop(gui)
+  GuiZSet(gui, 0)
+end
+
 local virtual_wand = {}
 local virtual_wand_privates = setmetatable({}, { __mode = "k" })
 local virtual_wand_props = {
@@ -1693,6 +2216,7 @@ return setmetatable({}, {
     return ({
       Deserialize = deserialize,
       RenderTooltip = render_tooltip,
+      RenderSpellTooltip = render_spell_tooltip,
       GetTooltipSize = get_tooltip_size,
       IsWand = entity_is_wand,
       GetHeldWand = get_held_wand,
