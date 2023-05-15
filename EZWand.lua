@@ -334,6 +334,8 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   if not origin_y then
     error("RenderTooltip: Argument y is required and must be a number", 2)
   end
+  origin_x = origin_x + 7 -- Border
+  origin_y = origin_y + 7
   -- gui = gui or GuiCreate()
   gui = gui_ or gui or GuiCreate()
   if not gui_ then
