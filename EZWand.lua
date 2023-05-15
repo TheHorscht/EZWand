@@ -460,7 +460,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       local w, h = GuiGetImageDimensions(gui, item_bg_icon, background_scale)
       local x, y
       if i == 1 then
-        x, y = ac_icon_x + ac_icon_width + 3, math.floor(ac_icon_y - ac_icon_height / 2 + 2)
+        x, y = ac_icon_x + ac_icon_width + 3, ac_icon_y - ac_icon_height / 2 + 1.5
       else
         x, y = math.floor(last_ac_x + (last_ac_width - 2)) + 1, last_ac_y
       end
