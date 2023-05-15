@@ -196,3 +196,25 @@ EZWand.RenderTooltip(x, y, {
   sprite_image_file = "data/items_gfx/handgun.png",
 }, gui)
 ```
+You can get the tooltip size beforehand using one of these two functions:
+```lua
+local props = {
+  props = {
+    shuffle = true,
+    spellsPerCast = 1,
+    castDelay = 30,
+    rechargeTime = 30,
+    manaMax = 200,
+    manaChargeSpeed = 20,
+    capacity = 10,
+    spread = 0,
+  },
+  spells = { "BOMB", "BOMB" },
+  always_cast_spells = { "BOMB", "BOMB" },
+  sprite_image_file = "data/items_gfx/handgun.png",
+}
+local width, height = EZWand.GetTooltipSize(wandprops, gui)
+-- or
+local wand = EZWand()
+local width, height = wand:GetTooltipSize(gui)
+```

@@ -283,6 +283,15 @@ local function get_spell_bg(action_id)
 	return spell_type_bgs[spell_lookup[action_id] and spell_lookup[action_id].type] or spell_type_bgs[ACTION_TYPE_OTHER]
 end
 
+local last_gui_frame_started = 0
+local function gui_start_frame_if_it_hasnt_been_started_already(gui)
+  local this_frame_num = GameGetFrameNum()
+  if last_gui_frame_started ~= this_frame_num then
+    GuiStartFrame(gui)
+    last_gui_frame_started = this_frame_num
+  end
+end
+
 -- This function is a giant mess, but it works :)
 -- wand needs to be of the same format as you get from EZWand.Deserialize():
 -- {
@@ -320,7 +329,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   -- gui = gui or GuiCreate()
   gui = gui_ or gui or GuiCreate()
   if not gui_ then
-    GuiStartFrame(gui)
+    gui_start_frame_if_it_hasnt_been_started_already(gui)
   end
   GuiIdPushString(gui, "EZWand_tooltip")
   -- GuiOptionsAdd(gui, GUI_OPTION.NonInteractive)
@@ -518,6 +527,27 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   GuiZSetForNextWidget(gui, 10)
   GuiImageNinePiece(gui, new_id(), origin_x - 5, origin_y - 5, right - (origin_x - 5) + 5,  bottom - (origin_y - 5) + 5)
   GuiIdPop(gui)
+  local width = right - origin_x + 10 + 4
+  local height = bottom - origin_y + 10 + 4
+  return width, height
+end
+
+-- "Calculate" the size of the tooltip by simply rendering it offscreen
+-- and cache the size of the last 10 wand tooltips
+local tooltip_size_cache = {}
+local tooltip_size_cache_indexes = {}
+local tooltip_size_cache_max_items = 10
+local function get_tooltip_size(wand, gui_)
+  if not tooltip_size_cache[wand] then
+    local width, height = render_tooltip(999999, 0, wand, gui_)
+    tooltip_size_cache[wand] = { width, height }
+    table.insert(tooltip_size_cache_indexes, wand)
+    if #tooltip_size_cache_indexes > tooltip_size_cache_max_items then
+      local v = table.remove(tooltip_size_cache_indexes, 1)
+      tooltip_size_cache[v] = nil
+    end
+  end
+  return unpack(tooltip_size_cache[wand])
 end
 
 local function refresh_wand_if_in_inventory(wand_id)
@@ -1190,6 +1220,14 @@ local function get_held_wand()
   end
 end
 
+function wand:GetTooltipSize(gui_)
+  local success, r1, r2 = pcall(get_tooltip_size, deserialize(self:Serialize()), gui_)
+  if not success then
+    error(r1, 2)
+  end
+  return r1, r2
+end
+
 function wand:RenderTooltip(origin_x, origin_y, gui_)
   local success, error_msg = pcall(render_tooltip, origin_x, origin_y, deserialize(self:Serialize()), gui_)
   if not success then
@@ -1208,6 +1246,7 @@ return setmetatable({}, {
     return ({
       Deserialize = deserialize,
       RenderTooltip = render_tooltip,
+      GetTooltipSize = get_tooltip_size,
       IsWand = entity_is_wand,
       GetHeldWand = get_held_wand,
     })[key]
