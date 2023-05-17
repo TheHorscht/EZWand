@@ -376,14 +376,14 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   end
   GuiLayoutBeginHorizontal(gui, origin_x, origin_y, true)
   GuiLayoutBeginVertical(gui, 0, 0)
-  local text_lightness = 0.82
+  local text_lightness = 0.81
   local function gui_text_with_shadow(gui, x, y, text, lightness)
     lightness = lightness or text_lightness
-    GuiColorSetForNextWidget(gui, lightness, lightness, lightness, 1)
+    GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
     GuiText(gui, x, y, text)
     GuiZSetForNextWidget(gui, 8)
     GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
-    GuiColorSetForNextWidget(gui, 0, 0, 0, 0.83)
+    GuiColorSetForNextWidget(gui, 0.005, 0, 0, 0.83)
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
     GuiText(gui, x, y + 1, text)
   end
