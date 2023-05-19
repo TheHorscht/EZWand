@@ -1304,6 +1304,32 @@ function get_action_metadata(action_id)
               "config_explosion", "damage")
             metadata.projectiles[filepath].explosion_radius = ComponentObjectGetValue2(projectile,
               "config_explosion", "explosion_radius")
+            if metadata.projectiles[filepath].damage_explosion == 5 and metadata.projectiles[filepath].explosion_radius == 20 then
+              -- Those are default values so we assume it wasn't set, so set it to 0
+              metadata.projectiles[filepath].damage_explosion = 0
+              metadata.projectiles[filepath].explosion_radius = 0
+            end
+            if metadata.projectiles[filepath].damage_explosion == 0 then
+              metadata.projectiles[filepath].explosion_radius = 0
+            end
+          end
+        end
+        local lightning_component = EntityGetFirstComponent(projectile_entity, "LightningComponent")
+        if lightning_component then
+          local config_explosion = ComponentObjectGetMembers(lightning_component, "config_explosion")
+          if config_explosion then
+            metadata.projectiles[filepath].damage_explosion = ComponentObjectGetValue2(lightning_component,
+              "config_explosion", "damage")
+            metadata.projectiles[filepath].explosion_radius = ComponentObjectGetValue2(lightning_component,
+              "config_explosion", "explosion_radius")
+            if metadata.projectiles[filepath].damage_explosion == 5 and metadata.projectiles[filepath].explosion_radius == 20 then
+              -- Those are default values so we assume it wasn't set, so set it to 0
+              metadata.projectiles[filepath].damage_explosion = 0
+              metadata.projectiles[filepath].explosion_radius = 0
+            end
+            if metadata.projectiles[filepath].damage_explosion == 0 then
+              metadata.projectiles[filepath].explosion_radius = 0
+            end
           end
         end
         EntityKill(projectile_entity)
@@ -1371,8 +1397,24 @@ local function get_prop(key1, key2, nil_value, format_func)
   end
 end
 
+local dmg_lookup = {
+  -- ["0.10000000149012"] = 2,
+  -- ["0.30000001192093"] = 8,
+  -- ["0.5"] = 13,
+  -- ["1.5"] = 38,
+  -- ["2.5"] = 63,
+  -- ["4.1999998092651"] = 104,
+}
 local function damage_multi(v)
-  return math.ceil(v * 25 - 0.501)--v * 25 --math.floor(v * 25 + 0.5)
+  -- return math.ceil(v * 25)
+  -- return v * 25
+  print(v)
+  if dmg_lookup[tostring(v)] then
+    return dmg_lookup[tostring(v)]
+  else
+    return math.ceil(v * 25 - 0.501)
+  end
+  -- return math.ceil(v * 25 - 0.501)
 end
 
 local function sign_str(v)
@@ -1385,12 +1427,22 @@ local function sign_str(v)
   end
 end
 
-local function time_str(v)
-  return GameTextGet("$inventory_seconds", ("%.2f"):format(v / 60))
+local function one_or_two_digits(v)
+  local digits = 2
+  v = tonumber(v)
+  if v % 1 == 0 then
+    digits = 1
+  end
+  return ("%." .. digits .. "f"):format(v)
 end
--- { icon = "data/ui_gfx/inventory/icon_action_max_uses.png", text = "$inventory_usesremaining", default_value = nil, display_func = function(md) return md.c.action_max_uses > 0 and md.c.action_max_uses end },
+
+local function time_str(v)
+  v = tonumber(v)
+  return GameTextGet("$inventory_seconds", one_or_two_digits(v / 60))
+end
+
 local a = {
-  { icon = "data/ui_gfx/inventory/icon_action_type.png", text = "$inventory_actiontype", display_func = function(md)
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_action_type.png", text = "$inventory_actiontype", display_func = function(md)
     return GameTextGetTranslatedOrNot(projectile_type_lookup[md.c.action_type])
   end },
   { icon = "data/ui_gfx/inventory/icon_action_max_uses.png", text = "$inventory_usesremaining", display_func = get_prop("c", "action_max_uses", nil) },
@@ -1399,9 +1451,9 @@ local a = {
   { just_space = true, },
   { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("projectile", "damage", 0, damage_multi) },
   { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("projectile", "damage_explosion", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", function(v) return v < 5 end) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", function(v) return v == 0 or v == 20 end) },
   { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("c", "damage_explosion_add", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("projectile", "explosion_radius", function(v) return v < 5 end) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("projectile", "explosion_radius", function(v) return v == 0 or v == 20 end) },
   { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_dmg_melee", display_func = get_prop("projectile", "damage_melee", 0, damage_multi) },
   { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_dmg_slice", display_func = get_prop("projectile", "damage_slice", 0, damage_multi) },
   { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_dmg_drill", display_func = get_prop("projectile", "damage_drill", 0, damage_multi) },
@@ -1410,27 +1462,32 @@ local a = {
   { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_dmg_healing", display_func = get_prop("projectile", "damage_healing", 0, damage_multi) },
   { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_dmg_curse", display_func = get_prop("projectile", "damage_curse", 0, damage_multi) },
 
-  { icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("projectile", "direction_random_rad", 0, function(v) return GameTextGet("$inventory_degrees", ("%.1f"):format(math.deg(v))) end) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("projectile", "direction_random_rad", 0, function(v) return GameTextGet("$inventory_degrees", ("%.1f"):format(math.deg(v))) end) },
 
   { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_speed", display_func = function(md)
     local speed_min = get_prop("projectile", "speed_min")(md)
     if not speed_min then return nil end
     local speed_max = get_prop("projectile", "speed_max")(md)
-    return (speed_max + speed_min) / 2
+    local speed = math.floor((speed_max + speed_min) / 2)
+    if speed == 0 then
+      return
+    else
+      return speed--(speed_max + speed_min) / 2
+    end
   end },
+  { just_hack = true }, -- if none of these below get rendered, add some extra vertical space, because that's how the OG game does it :)
   { just_space = true, },
-  { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_mod_speed", display_func = get_prop("c", "speed_multiplier", 1, function(v) return "x " .. ("%.1f"):format(v) end) },
-  { icon = "data/ui_gfx/inventory/icon_fire_rate_wait.png", text = "$inventory_mod_castdelay", display_func = get_prop("c", "fire_rate_wait", 0, function(v) return sign_str(v) .. time_str(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_fire_rate_wait.png", text = "$inventory_mod_castdelay", display_func = get_prop("c", "fire_rate_wait", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_mod_speed", display_func = get_prop("c", "speed_multiplier", 1, function(v) return "x " .. one_or_two_digits(v) end) },
 
-  { icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return GameTextGet("$inventory_degrees", v) end) },
-
-  { icon = "data/ui_gfx/inventory/icon_reload_time.png", text = "$inventory_mod_rechargetime", display_func = get_prop("c", "reload_time", 0, function(v) return sign_str(v) .. time_str(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_reload_time.png", text = "$inventory_mod_rechargetime", display_func = get_prop("c", "reload_time", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
   { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0) },
-  -- { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_mod_speed", display_func = get_prop("projectile", "damage_curse", 0) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_mod_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", 0) },
-  { icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_mod_spread", display_func = get_prop("shot_effects", "spread_degrees", 0) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_mod_spread", display_func = get_prop("shot_effects", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
   { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("shot_effects", "knockback_force", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, function(v) return (v > 0 and "+" or "") .. damage_multi(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0, damage_multi) },
   { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
   { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
   { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
@@ -1443,14 +1500,14 @@ local a = {
   { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. v .. "%" end) },
 }
 
---[[ 
-
-inventory_seconds,$0 s,$0 с,$0 s,$0 s,$0 s,$0 s,$0 s,$0 s,$0 秒,$0 秒,$0초,,,
-inventory_degrees,$0 DEG,$0 ГРАД,$0 GRAUS,$0 GRAD,$0 GRA,$0 DEG.,$0 GRA,$0 ST.,$0 度,$0 度,$0도,,,
-
- ]]
-
 local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
+  if not shit then
+    shit = true
+    local metadata = get_action_metadata("BALL_LIGHTNING")
+    local inspect = dofile_once("mods/ARPGInventory/inspect.lua")
+    print(inspect(metadata))
+  end
+
   if type(action_id) ~= "string" then
     error("RenderSpellTooltip: Argument action_id is required and must be a string", 2)
   end
@@ -1475,9 +1532,32 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
     GuiText(gui, x, y + 1, text)
   end
+  local function gui_text_with_shadow_adjusted(gui, x, y, text, lightness)
+    lightness = lightness or text_lightness
+    local adjust = { F = -1, L = 1, P = 1, ["1"] = 2 }
+    for i=1, #text do
+      local char = text:sub(i, i)
+      if i == 1 then
+        -- GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
+        -- GuiText(gui, x, y, char)
+        gui_text_with_shadow(gui, x, y, char)
+      else
+        local prev_char = text:sub(i-1, i-1)
+        local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+        GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
+        local offset = adjust[prev_char] or 0
+        gui_text_with_shadow(gui, last_x + last_w + offset, last_y - 1, char)
+        -- GuiText(gui, last_x + last_w + offset, last_y, char)
+      end
+    end
+    -- GuiZSetForNextWidget(gui, z + 1)
+    -- GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+    -- GuiColorSetForNextWidget(gui, 0.005, 0, 0, 0.83)
+    -- local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
+    -- GuiText(gui, x, y + 1, text)
+  end
   origin_x = origin_x + 7 -- Border
   origin_y = origin_y + 7
-  -- gui = gui or GuiCreate()
   gui = gui_ or gui or GuiCreate()
   if not gui_ then
     gui_start_frame_if_it_hasnt_been_started_already(gui)
@@ -1513,43 +1593,39 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     spell_name = spell_name .. (" (%d)"):format(uses_remaining)
   end
   GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
-  gui_text_with_shadow(gui, x, y, spell_name)
+  -- gui_text_with_shadow(gui, x, y, spell_name)
+  gui_text_with_shadow_adjusted(gui, x, y, spell_name)
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
-
+  right = math.max(right, last_x + last_w + 10)
+  -- right = math.max(right, last_x + last_w + 5)
   y = y + last_h
   GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
   gui_text_with_shadow(gui, x, y + 5, GameTextGetTranslatedOrNot(action.description or ""))
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
-  right = math.max(right, last_x + last_w)
+  right = math.max(right, last_x + last_w + 10)
+  -- right = math.max(right, last_x + last_w + 5)
   y = y + last_h + 5
   local icons_y = y
   -- Icons / Property names
   GuiBeginAutoBox(gui)
   GuiLayoutBeginVertical(gui, x, y, true)
   gui_text_with_shadow(gui, 0, margin, " ")
-  local elements = {
-    { "data/ui_gfx/inventory/icon_action_type.png", "$inventory_actiontype", "Projectile" },
-    { "data/ui_gfx/inventory/icon_action_max_uses.png", "$inventory_usesremaining", "3" },
-    { "", "", "" },
-    { "data/ui_gfx/inventory/icon_mana_drain.png", "$inventory_manadrain", "25" },
-    { "", "", "" },
-    { "data/ui_gfx/inventory/icon_damage_explosion.png", "$inventory_dmg_explosion", "125" },
-    { "data/ui_gfx/inventory/icon_explosion_radius.png", "$inventory_explosion_radius", "60" },
-    { "data/ui_gfx/inventory/icon_speed_multiplier.png", "$inventory_speed", "60" },
-    { "", "", "" },
-    { "data/ui_gfx/inventory/icon_fire_rate_wait.png", "$inventory_mod_castdelay", "+1.67 s" },
-  }
-  elements = {}
+  local elements = {}
   local metadata = get_action_metadata(action_id)
   local last_line_was_rendered = false
+  local just_hack_on = false
   for i, v in ipairs(a) do
     if v.just_space and last_line_was_rendered then
       table.insert(elements, { "", "", "" })
+    elseif v.just_hack then
+      -- start counting
+      just_hack_on = true
     elseif not v.just_space then
       local value = v.display_func(metadata)
       if value then
-        table.insert(elements, { v.icon, v.text, value })
+        table.insert(elements, { v.icon, v.text, value, ignore_width = v.ignore_width })
         last_line_was_rendered = true
+        just_hack_on = false
       else
         last_line_was_rendered = false
       end
@@ -1575,12 +1651,12 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
   -- The left colum seems to have a minimum width
   last_w = math.max(67, last_w)
+  if just_hack_on then
+    last_h = last_h + 5
+  end
   y = y + last_h
 
-  -- local value = tonumber(GlobalsGetValue("vvv", "0"))
-  -- value = GuiSlider(gui, new_id(), 0, 0, "SHID", value, 0, 100, 0, 1, " $0", 100)
-  -- GlobalsSetValue("vvv", value)
-
+  local projectile_type_text = { x = 0, y = 0 }
   -- Values
   GuiBeginAutoBox(gui)
   GuiLayoutBeginVertical(gui, last_x + last_w + 3, last_y + 3, true)
@@ -1589,7 +1665,25 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     local spacing = 0
     if v[1] ~= "" then
       GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
-      gui_text_with_shadow(gui, 0, margin - 3, v[3])
+      -- Mimic the jank of vanilla where the text "Static Proj." etc in the original
+      -- tooltips does not actually count toward the horizontal size
+      -- So, save the location where it WOULD be rendered, while still drawing something
+      -- to trigger the layouting etc and then draw the text later with Layout_NoLayouting
+      if i == 1 then
+        -- For the projectile type, only "Projectile" is used for width calculation
+        GuiColorSetForNextWidget(gui, 1, 1, 1, 0.000001)
+        GuiText(gui, 0, margin - 3, GameTextGetTranslatedOrNot("$inventory_actiontype_projectile"))
+        local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+        GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+        gui_text_with_shadow(gui, last_x, last_y, v[3])
+      elseif v.ignore_width then
+        GuiText(gui, 0, margin - 3, " ")
+        local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
+        GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
+        gui_text_with_shadow(gui, last_x, last_y, v[3])
+      else
+        gui_text_with_shadow(gui, 0, margin - 3, v[3])
+      end
     else
       spacing = spacing_empty_rows
     end
@@ -1598,22 +1692,22 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     end
   end
   GuiLayoutEnd(gui)
+  -- GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "data/ui_gfx/1px_white.png", "data/ui_gfx/1px_white.png")
   GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "mods/ARPGInventory/1x1_invisible.png", "mods/ARPGInventory/1x1_invisible.png")
   -- END of Values
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
-  right = math.max(right, last_x + last_w)
+  right = math.max(right, last_x + last_w - 1)
 
   -- Spell icon
-
   local img_w, img_h = GuiGetImageDimensions(gui, action.sprite, 2)
-  GuiImage(gui, new_id(), right + 10, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
+  GuiZSet(gui, z - 0.1)
+  GuiImage(gui, new_id(), right, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
+  -- GuiImage(gui, new_id(), right + 5, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
   right = math.max(right, last_x + last_w)
-  -- GuiImage(gui, new_id(), right, origin_y + (bottom - (y - 5)) / 2, action.sprite, 1, 1, 1)
 
-  local bottom = y
   GuiZSetForNextWidget(gui, z + 2)
-  GuiImageNinePiece(gui, new_id(), origin_x - 5, origin_y - 5, right - (origin_x - 5) + 5,  bottom - (origin_y - 5) + 5, 1)
+  GuiImageNinePiece(gui, new_id(), origin_x - 5, origin_y - 5, right - (origin_x - 5) + 5,  y - (origin_y - 5) + 5, 1)
   GuiIdPop(gui)
   GuiZSet(gui, 0)
 end
