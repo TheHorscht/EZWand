@@ -1238,6 +1238,10 @@ function wand:RenderTooltip(origin_x, origin_y, gui_)
   end
 end
 
+local function to_int(v)
+  return v - (v % 1)
+end
+
 local action_metadata = {}
 local action_data = {}
 function get_action_metadata(action_id)
@@ -1268,6 +1272,10 @@ function get_action_metadata(action_id)
       damage_critical = true,
     }
     reflecting = true
+    local function p(v, a)
+      local a = math.pow(10, a)
+      return math.floor(v * a + 0.5) / a
+    end
     Reflection_RegisterProjectile = function(filepath)
       metadata.projectiles = metadata.projectiles or {}
       if metadata.projectiles[filepath] == nil then
@@ -1282,6 +1290,8 @@ function get_action_metadata(action_id)
               metadata.projectiles[filepath][k] = ComponentGetValue2(projectile, k)
             end
           end
+          metadata.projectiles[filepath].damage = math.floor((metadata.projectiles[filepath].damage or 0) * 25 + 0.501)
+          metadata.projectiles[filepath].projectiles = 1
           metadata.projectiles[filepath].projectiles = 1
           metadata.projectiles[filepath].lifetime = ComponentGetValue2(projectile, "mStartingLifetime")
           ComponentSetValue2(projectile, "on_death_explode", false)
@@ -1293,8 +1303,8 @@ function get_action_metadata(action_id)
           local damage_by_type = ComponentObjectGetMembers(projectile, "damage_by_type")
           if damage_by_type then
             for type, value in pairs(damage_by_type or {}) do
-              metadata.projectiles[filepath]["damage_" .. type] = ComponentObjectGetValue2(projectile,
-                "damage_by_type", type) or 0
+              metadata.projectiles[filepath]["damage_" .. type] = math.floor((ComponentObjectGetValue2(projectile,
+                "damage_by_type", type) or 0) * 25 + 0.5)
             end
           end
 
@@ -1312,6 +1322,11 @@ function get_action_metadata(action_id)
             if metadata.projectiles[filepath].damage_explosion == 0 then
               metadata.projectiles[filepath].explosion_radius = 0
             end
+            print('metadata.projectiles[filepath].damage_explosion (' .. tostring(metadata.projectiles[filepath].damage_explosion) .. ':'.. type(metadata.projectiles[filepath].damage_explosion) .. ')')
+            local v = metadata.projectiles[filepath].damage_explosion
+            v = p(v, 7)
+            metadata.projectiles[filepath].damage_explosion = to_int(v * 25)
+            print('A: metadata.projectiles[filepath].damage_explosion (' .. tostring(metadata.projectiles[filepath].damage_explosion) .. ':'.. type(metadata.projectiles[filepath].damage_explosion) .. ')')
           end
         end
         local lightning_component = EntityGetFirstComponent(projectile_entity, "LightningComponent")
@@ -1327,9 +1342,13 @@ function get_action_metadata(action_id)
               metadata.projectiles[filepath].damage_explosion = 0
               metadata.projectiles[filepath].explosion_radius = 0
             end
-            if metadata.projectiles[filepath].damage_explosion == 0 then
+            if metadata.projectiles[filepath].damage_explosion == 0 or metadata.projectiles[filepath].damage_radius == 0 then
+              metadata.projectiles[filepath].damage_explosion = 0
               metadata.projectiles[filepath].explosion_radius = 0
             end
+            local v = metadata.projectiles[filepath].damage_explosion
+            v = p(v, 7)
+            metadata.projectiles[filepath].damage_explosion = to_int(v * 25)
           end
         end
         EntityKill(projectile_entity)
@@ -1352,9 +1371,14 @@ function get_action_metadata(action_id)
     action_data[action_id].action()
     EntityLoad = _EntityLoad
     draw_actions = _draw_actions
+    for k, v in pairs(c) do
+      if k:match("damage_.+_add") then
+        c[k] = math.floor(c[k] * 25 + 0.5)
+      end
+    end
     c.draw_actions = draws
     c.reload_time = current_reload_time
-    c.mana = action_data[action_id].mana
+    c.mana = action_data[action_id].mana or 10
     c.action_type = action_data[action_id].type
     c.action_max_uses = action_data[action_id].max_uses
     metadata.c = c
@@ -1405,17 +1429,17 @@ local dmg_lookup = {
   -- ["2.5"] = 63,
   -- ["4.1999998092651"] = 104,
 }
-local function damage_multi(v)
-  -- return math.ceil(v * 25)
-  -- return v * 25
-  print(v)
-  if dmg_lookup[tostring(v)] then
-    return dmg_lookup[tostring(v)]
-  else
-    return math.ceil(v * 25 - 0.501)
-  end
-  -- return math.ceil(v * 25 - 0.501)
-end
+-- local function damage_multi(v)
+--   -- return math.ceil(v * 25)
+--   -- return v * 25
+--   print(v)
+--   if dmg_lookup[tostring(v)] then
+--     return dmg_lookup[tostring(v)]
+--   else
+--     return math.ceil(v * 25 - 0.501)
+--   end
+--   -- return math.ceil(v * 25 - 0.501)
+-- end
 
 local function sign_str(v)
   if v == 0 then
@@ -1449,18 +1473,18 @@ local a = {
   { just_space = true, },
   { icon = "data/ui_gfx/inventory/icon_mana_drain.png", text = "$inventory_manadrain", display_func = get_prop("c", "mana") },
   { just_space = true, },
-  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("projectile", "damage", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("projectile", "damage_explosion", 0, damage_multi) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("projectile", "damage", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("projectile", "damage_explosion", 0) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", function(v) return v == 0 or v == 20 end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("c", "damage_explosion_add", 0, damage_multi) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("c", "damage_explosion_add", 0) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("projectile", "explosion_radius", function(v) return v == 0 or v == 20 end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_dmg_melee", display_func = get_prop("projectile", "damage_melee", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_dmg_slice", display_func = get_prop("projectile", "damage_slice", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_dmg_drill", display_func = get_prop("projectile", "damage_drill", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_dmg_fire", display_func = get_prop("projectile", "damage_fire", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_dmg_ice", display_func = get_prop("projectile", "damage_ice", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_dmg_healing", display_func = get_prop("projectile", "damage_healing", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_dmg_curse", display_func = get_prop("projectile", "damage_curse", 0, damage_multi) },
+  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_dmg_melee", display_func = get_prop("projectile", "damage_melee", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_dmg_slice", display_func = get_prop("projectile", "damage_slice", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_dmg_drill", display_func = get_prop("projectile", "damage_drill", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_dmg_fire", display_func = get_prop("projectile", "damage_fire", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_dmg_ice", display_func = get_prop("projectile", "damage_ice", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_dmg_healing", display_func = get_prop("projectile", "damage_healing", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_dmg_curse", display_func = get_prop("projectile", "damage_curse", 0) },
 
   { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("projectile", "direction_random_rad", 0, function(v) return GameTextGet("$inventory_degrees", ("%.1f"):format(math.deg(v))) end) },
 
@@ -1482,28 +1506,29 @@ local a = {
 
   { icon = "data/ui_gfx/inventory/icon_reload_time.png", text = "$inventory_mod_rechargetime", display_func = get_prop("c", "reload_time", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
   { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
-  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0) },
+  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0, function(v) return sign_str(v) .. v end) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_mod_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", 0) },
   { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_mod_spread", display_func = get_prop("shot_effects", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
+  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("c", "knockback_force", 0, function(v) return (v > 0 and "+" or "") .. v end) },
   { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("shot_effects", "knockback_force", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, function(v) return (v > 0 and "+" or "") .. damage_multi(v) end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0, damage_multi) },
-  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, function(v) v = damage_multi(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, function(v) return (v > 0 and "+" or "") .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0) },
+  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, function(v) return sign_str(v) .. v end) },
   { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. v .. "%" end) },
 }
 
 local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   if not shit then
     shit = true
-    local metadata = get_action_metadata("BALL_LIGHTNING")
+    local metadata = get_action_metadata("KNOCKBACK")
     local inspect = dofile_once("mods/ARPGInventory/inspect.lua")
     print(inspect(metadata))
   end
@@ -1532,9 +1557,15 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
     GuiText(gui, x, y + 1, text)
   end
+  local is_description = false
   local function gui_text_with_shadow_adjusted(gui, x, y, text, lightness)
     lightness = lightness or text_lightness
-    local adjust = { F = -1, L = 1, P = 1, ["1"] = 2 }
+    local adjust
+    if is_description then
+      adjust = { ["!"] = 1 }
+    else
+      adjust = { F = -1, L = 1, P = 1, ["1"] = 2}
+    end
     for i=1, #text do
       local char = text:sub(i, i)
       if i == 1 then
@@ -1600,7 +1631,9 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   -- right = math.max(right, last_x + last_w + 5)
   y = y + last_h
   GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
-  gui_text_with_shadow(gui, x, y + 5, GameTextGetTranslatedOrNot(action.description or ""))
+  is_description = true
+  gui_text_with_shadow_adjusted(gui, x, y + 5, GameTextGetTranslatedOrNot(action.description or ""))
+  is_description = false
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
   right = math.max(right, last_x + last_w + 10)
   -- right = math.max(right, last_x + last_w + 5)
