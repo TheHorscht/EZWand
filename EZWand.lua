@@ -379,7 +379,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   local text_lightness = 0.81
   local function gui_text_with_shadow(gui, x, y, text, lightness)
     lightness = lightness or text_lightness
-    GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
+    GuiColorSetForNextWidget(gui, math.min(1, lightness + 0.005), lightness, lightness, 1)
     GuiText(gui, x, y, text)
     GuiZSetForNextWidget(gui, 8)
     GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
