@@ -1440,37 +1440,7 @@ local function get_prop(key1, key2, nil_value, format_func)
   end
 end
 
-local dmg_lookup = {
-  -- ["0.10000000149012"] = 2,
-  -- ["0.30000001192093"] = 8,
-  -- ["0.5"] = 13,
-  -- ["1.5"] = 38,
-  -- ["2.5"] = 63,
-  -- ["4.1999998092651"] = 104,
-}
--- local function damage_multi(v)
---   -- return math.ceil(v * 25)
---   -- return v * 25
---   print(v)
---   if dmg_lookup[tostring(v)] then
---     return dmg_lookup[tostring(v)]
---   else
---     return math.ceil(v * 25 - 0.501)
---   end
---   -- return math.ceil(v * 25 - 0.501)
--- end
-
 local function sign_str(v)
-  if v == 0 then
-    return ""
-  elseif v > 0 then
-    return "+"
-  else
-    return "-"
-  end
-end
-
-local function sign_str2(v)
   return (v > 0 and "+" or "") .. v
 end
 
@@ -1525,26 +1495,26 @@ local a = {
   { just_hack = true }, -- if none of these below get rendered, add some extra vertical space, because that's how the OG game does it :)
   { icon = "data/ui_gfx/inventory/icon_fire_rate_wait.png", text = "$inventory_mod_castdelay", display_func = get_prop("c", "fire_rate_wait", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
   { icon = "data/ui_gfx/inventory/icon_reload_time.png", text = "$inventory_mod_rechargetime", display_func = get_prop("c", "reload_time", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
-  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0, function(v) return sign_str(v) .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0, sign_str) },
   { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_mod_speed", display_func = get_prop("c", "speed_multiplier", 1, function(v) return "x " .. one_or_two_digits(v) end) },
-  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("c", "explosion_radius", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("c", "explosion_radius", 0, sign_str) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_mod_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", 0) },
   { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
   { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_mod_spread", display_func = get_prop("shot_effects", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
-  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("c", "knockback_force", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("c", "knockback_force", 0, sign_str) },
   { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("shot_effects", "knockback_force", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, sign_str) },
   { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, sign_str2) },
-  { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str2(v) .. "%" end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, sign_str) },
+  { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. "%" end) },
 }
 
 local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
