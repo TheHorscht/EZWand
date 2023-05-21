@@ -1292,7 +1292,6 @@ function get_action_metadata(action_id)
           end
           metadata.projectiles[filepath].damage = math.floor((metadata.projectiles[filepath].damage or 0) * 25 + 0.501)
           metadata.projectiles[filepath].projectiles = 1
-          metadata.projectiles[filepath].projectiles = 1
           metadata.projectiles[filepath].lifetime = ComponentGetValue2(projectile, "mStartingLifetime")
           ComponentSetValue2(projectile, "on_death_explode", false)
           ComponentSetValue2(projectile, "on_lifetime_out_explode", false)
@@ -1323,7 +1322,7 @@ function get_action_metadata(action_id)
             if explosion_radius == 0 then
               damage = 0
             end
-            damage = to_int(p(damage, 7) * 25)
+            damage = to_int(p(damage, 6) * 25)
             metadata.projectiles[filepath].damage_explosion = damage
             metadata.projectiles[filepath].explosion_radius = explosion_radius
           end
@@ -1388,7 +1387,12 @@ function get_action_metadata(action_id)
     draw_actions = _draw_actions
     for k, v in pairs(c) do
       if k:match("damage_.+_add") then
-        c[k] = math.floor(c[k] * 25 + 0.5)
+        local dmg = c[k] * 25
+        if dmg > 0 then
+          c[k] = math.floor(dmg + 0.5)
+        else
+          c[k] = math.floor(dmg)
+        end
       end
     end
     c.draw_actions = draws
@@ -1466,6 +1470,10 @@ local function sign_str(v)
   end
 end
 
+local function sign_str2(v)
+  return (v > 0 and "+" or "") .. v
+end
+
 local function one_or_two_digits(v)
   local digits = 2
   v = tonumber(v)
@@ -1493,8 +1501,6 @@ local a = {
   { just_space = true, group = 3 },
   { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("projectile", "damage", 0) },
   { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("projectile", "damage_explosion", 0) },
-  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("c", "explosion_radius", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_dmg_explosion", display_func = get_prop("c", "damage_explosion_add", 0) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("projectile", "explosion_radius", 0) },
   { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_dmg_melee", display_func = get_prop("projectile", "damage_melee", 0) },
   { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_dmg_slice", display_func = get_prop("projectile", "damage_slice", 0) },
@@ -1512,38 +1518,39 @@ local a = {
     if speed == 0 then
       return
     else
-      return speed--(speed_max + speed_min) / 2
+      return speed
     end
   end },
   { just_space = true, group = 3 },
   { just_hack = true }, -- if none of these below get rendered, add some extra vertical space, because that's how the OG game does it :)
   { icon = "data/ui_gfx/inventory/icon_fire_rate_wait.png", text = "$inventory_mod_castdelay", display_func = get_prop("c", "fire_rate_wait", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
-  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0, function(v) return sign_str(v) .. v end) },
   { icon = "data/ui_gfx/inventory/icon_reload_time.png", text = "$inventory_mod_rechargetime", display_func = get_prop("c", "reload_time", 0, function(v) return (v > 0 and "+" or "") .. time_str(v) end) },
+  { icon = "data/ui_gfx/inventory/icon_bounces.png", text = "$inventory_mod_bounces", display_func = get_prop("c", "bounces", 0, function(v) return sign_str(v) .. v end) },
   { icon = "data/ui_gfx/inventory/icon_speed_multiplier.png", text = "$inventory_mod_speed", display_func = get_prop("c", "speed_multiplier", 1, function(v) return "x " .. one_or_two_digits(v) end) },
-  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
+  { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_explosion_radius", display_func = get_prop("c", "explosion_radius", 0, sign_str2) },
   { icon = "data/ui_gfx/inventory/icon_explosion_radius.png", text = "$inventory_mod_explosion_radius", display_func = get_prop("shot_effects", "explosion_radius", 0) },
+  { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_spread", display_func = get_prop("c", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
   { ignore_width = true, icon = "data/ui_gfx/inventory/icon_spread_degrees.png", text = "$inventory_mod_spread", display_func = get_prop("shot_effects", "spread_degrees", 0, function(v) return (v > 0 and "+" or "") .. GameTextGet("$inventory_degrees", math.floor(v)) end) },
-  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("c", "knockback_force", 0, function(v) return (v > 0 and "+" or "") .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("c", "knockback_force", 0, sign_str2) },
   { icon = "data/ui_gfx/inventory/icon_knockback.png", text = "$inventory_mod_knockback", display_func = get_prop("shot_effects", "knockback_force", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, function(v) return (v > 0 and "+" or "") .. v end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_damage", display_func = get_prop("c", "damage_projectile_add", 0, sign_str2) },
   { icon = "data/ui_gfx/inventory/icon_damage_projectile.png", text = "$inventory_mod_damage", display_func = get_prop("shot_effects", "damage_projectile_add", 0) },
-  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, function(v) return (v > 0 and "+" or "") .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, function(v) return sign_str(v) .. v end) },
-  { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. v .. "%" end) },
+  { icon = "data/ui_gfx/inventory/icon_damage_melee.png", text = "$inventory_mod_damage_melee", display_func = get_prop("c", "damage_melee_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_electricity.png", text = "$inventory_mod_damage_electric", display_func = get_prop("c", "damage_electricity_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_fire.png", text = "$inventory_mod_damage_fire", display_func = get_prop("c", "damage_fire_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_explosion.png", text = "$inventory_mod_damage_explosion", display_func = get_prop("c", "damage_explosion_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_ice.png", text = "$inventory_mod_damage_ice", display_func = get_prop("c", "damage_ice_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_slice.png", text = "$inventory_mod_damage_slice", display_func = get_prop("c", "damage_slice_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_healing.png", text = "$inventory_mod_damage_healing", display_func = get_prop("c", "damage_healing_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_curse.png", text = "$inventory_mod_damage_curse", display_func = get_prop("c", "damage_curse_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_drill.png", text = "$inventory_mod_damage_drill", display_func = get_prop("c", "damage_drill_add", 0, sign_str2) },
+  { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str2(v) .. "%" end) },
 }
 
 local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   if not shit then
     shit = true
-    local metadata = get_action_metadata("EXPLOSION_TINY")
+    local metadata = get_action_metadata("ROCKET")
     local inspect = dofile_once("mods/ARPGInventory/inspect.lua")
     print(inspect(metadata))
   end
