@@ -1242,6 +1242,11 @@ local function to_int(v)
   return v - (v % 1)
 end
 
+local function p(v, a)
+  local a = math.pow(10, a)
+  return math.floor(v * a + 0.5) / a
+end
+
 local action_metadata = {}
 local action_data = {}
 function get_action_metadata(action_id)
@@ -1272,10 +1277,6 @@ function get_action_metadata(action_id)
       damage_critical = true,
     }
     reflecting = true
-    local function p(v, a)
-      local a = math.pow(10, a)
-      return math.floor(v * a + 0.5) / a
-    end
     Reflection_RegisterProjectile = function(filepath)
       metadata.projectiles = metadata.projectiles or {}
       if metadata.projectiles[filepath] == nil then
@@ -1347,22 +1348,6 @@ function get_action_metadata(action_id)
             damage = to_int(p(damage, 7) * 25)
             metadata.projectiles[filepath].damage_explosion = damage
             metadata.projectiles[filepath].explosion_radius = explosion_radius
-            -- metadata.projectiles[filepath].damage_explosion = ComponentObjectGetValue2(lightning_component,
-            --   "config_explosion", "damage")
-            -- metadata.projectiles[filepath].explosion_radius = ComponentObjectGetValue2(lightning_component,
-            --   "config_explosion", "explosion_radius")
-            -- if metadata.projectiles[filepath].damage_explosion == 5 and metadata.projectiles[filepath].explosion_radius == 20 then
-            --   -- Those are default values so we assume it wasn't set, so set it to 0
-            --   metadata.projectiles[filepath].damage_explosion = 0
-            --   metadata.projectiles[filepath].explosion_radius = 0
-            -- end
-            -- if metadata.projectiles[filepath].damage_explosion == 0 or metadata.projectiles[filepath].damage_radius == 0 then
-            --   metadata.projectiles[filepath].damage_explosion = 0
-            --   metadata.projectiles[filepath].explosion_radius = 0
-            -- end
-            -- local v = metadata.projectiles[filepath].damage_explosion
-            -- v = p(v, 7)
-            -- metadata.projectiles[filepath].damage_explosion = to_int(v * 25)
           end
         end
         EntityKill(projectile_entity)
@@ -1518,13 +1503,6 @@ local a = {
 }
 
 local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
-  if not shit then
-    shit = true
-    local metadata = get_action_metadata("ROCKET")
-    local inspect = dofile_once("mods/ARPGInventory/inspect.lua")
-    print(inspect(metadata))
-  end
-
   if type(action_id) ~= "string" then
     error("RenderSpellTooltip: Argument action_id is required and must be a string", 2)
   end
@@ -1564,12 +1542,9 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     else
       adjust = { F = -1, L = 1, P = 1, ["1"] = 2}
     end
-    local last_char_x, last_char_y, last_char_w
     for i=1, #text do
       local char = text:sub(i, i)
       if i == 1 then
-        -- GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
-        -- GuiText(gui, x, y, char)
         gui_text_with_shadow(gui, x, y, char)
       else
         local prev_char = text:sub(i-1, i-1)
@@ -1577,7 +1552,6 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
         GuiColorSetForNextWidget(gui, lightness + 0.005, lightness, lightness, 1)
         local offset = adjust[prev_char] or 0
         gui_text_with_shadow(gui, last_x + last_w + offset, last_y - 1, char)
-        -- GuiText(gui, last_x + last_w + offset, last_y, char)
         last_char_x, last_char_y, last_char_w = last_x, last_y, last_w
       end
     end
@@ -1585,15 +1559,9 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     local last_adjust = adjust[last_char]
     if adjust[last_char] then
       local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
-      -- GuiImage(gui, new_id(), last_char_x + last_char_w, last_char_y, "data/ui_gfx/1px_white.png", 1, adjust[last_char], 1)
       GuiColorSetForNextWidget(gui, 1, 1, 1, 0.000001)
       GuiText(gui, last_x + adjust[last_char], last_y, last_char)
     end
-    -- GuiZSetForNextWidget(gui, z + 1)
-    -- GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
-    -- GuiColorSetForNextWidget(gui, 0.005, 0, 0, 0.83)
-    -- local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
-    -- GuiText(gui, x, y + 1, text)
   end
   origin_x = origin_x + 7 -- Border
   origin_y = origin_y + 7
@@ -1627,11 +1595,9 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     spell_name = spell_name .. (" (%d)"):format(uses_remaining)
   end
   GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
-  -- gui_text_with_shadow(gui, x, y, spell_name)
   gui_text_with_shadow_adjusted(gui, x, y, spell_name)
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
   right = math.max(right, last_x + last_w + 10)
-  -- right = math.max(right, last_x + last_w + 5)
   y = y + last_h
   GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)
   is_description = true
@@ -1641,7 +1607,6 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   is_description = false
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
   right = math.max(right, last_x + last_w + 10)
-  -- right = math.max(right, last_x + last_w + 5)
   y = y + last_h + 5
   local icons_y = y
   -- Icons / Property names
@@ -1705,7 +1670,6 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   end
   y = y + last_h
 
-  local projectile_type_text = { x = 0, y = 0 }
   -- Values
   GuiBeginAutoBox(gui)
   GuiLayoutBeginVertical(gui, last_x + last_w + 3, last_y + 3, true)
@@ -1741,7 +1705,6 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
     end
   end
   GuiLayoutEnd(gui)
-  -- GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "data/ui_gfx/1px_white.png", "data/ui_gfx/1px_white.png")
   GuiEndAutoBoxNinePiece(gui, 0, 0, 0, false, 0, "mods/ARPGInventory/1x1_invisible.png", "mods/ARPGInventory/1x1_invisible.png")
   -- END of Values
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
@@ -1751,7 +1714,6 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   local img_w, img_h = GuiGetImageDimensions(gui, action.sprite, 2)
   GuiZSet(gui, z - 0.1)
   GuiImage(gui, new_id(), right, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
-  -- GuiImage(gui, new_id(), right + 5, origin_y + (y - bottom) / 2 - img_h / 2, action.sprite, 1, 2, 2)
   local _, _, _, last_x, last_y, last_w, last_h = GuiGetPreviousWidgetInfo(gui)
   right = math.max(right, last_x + last_w)
 
