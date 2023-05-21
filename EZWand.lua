@@ -440,6 +440,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   local _, _, _, spread_text_x, spread_text_y, spread_text_width, spread_text_height = GuiGetPreviousWidgetInfo(gui)
   GuiLayoutEnd(gui)
   GuiLayoutEnd(gui)
+  local spell_tooltip
   local always_cast_spell_icon_scale = 0.711
   local add_some = 0 -- I'm out of creativity for variable names...
   -- Always casts
@@ -468,8 +469,11 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       -- Background / Spell type border
       GuiImage(gui, new_id(), x, y, item_bg_icon, 1, background_scale, background_scale)
-      _, _, _, last_ac_x, last_ac_y, last_ac_width, last_ac_height = GuiGetPreviousWidgetInfo(gui)
-      local _, _, _, x, y, w, h = GuiGetPreviousWidgetInfo(gui)
+      local hovered
+      _, _, hovered, last_ac_x, last_ac_y, last_ac_width, last_ac_height = GuiGetPreviousWidgetInfo(gui)
+      if hovered then
+        spell_tooltip = { id = spell, x = x, y = y }
+      end
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       -- Spell icon
       GuiImage(gui, new_id(), x + 2, y + 2, (spell_lookup[spell] and spell_lookup[spell].icon) or "data/ui_gfx/gun_actions/unidentified.png", 1, always_cast_spell_icon_scale, always_cast_spell_icon_scale)
@@ -498,6 +502,10 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     else
       -- Background / Spell type border
       GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.75, background_scale, background_scale)
+      local _, _, hovered = GuiGetPreviousWidgetInfo(gui)
+      if hovered then
+        spell_tooltip = { id = wand.spells[i], x = x, y = y }
+      end
       GuiZSetForNextWidget(gui, 8)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       GuiImage(gui, new_id(), x + 0.11, y, (spell_lookup[wand.spells[i]] and spell_lookup[wand.spells[i]].icon) or "data/ui_gfx/gun_actions/unidentified.png", 0.8, spell_icon_scale, spell_icon_scale)
@@ -530,6 +538,10 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   GuiZSetForNextWidget(gui, 10)
   GuiImageNinePiece(gui, new_id(), origin_x - 5, origin_y - 5, right - (origin_x - 5) + 5,  bottom - (origin_y - 5) + 5)
   GuiIdPop(gui)
+  if spell_tooltip then
+    render_spell_tooltip(spell_tooltip.id, spell_tooltip.x - 20, spell_tooltip.y + 20, gui)
+  end
+  -- render_spell_tooltip(spell, x, y, gui)
   local width = right - origin_x + 10 + 4
   local height = bottom - origin_y + 10 + 4
   return width, height
@@ -1502,7 +1514,8 @@ local a = {
   { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. "%" end) },
 }
 
-local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
+function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
+  local quirk_mode = false
   if type(action_id) ~= "string" then
     error("RenderSpellTooltip: Argument action_id is required and must be a string", 2)
   end
@@ -1535,6 +1548,9 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   end
   local is_description = false
   local function gui_text_with_shadow_adjusted(gui, x, y, text, lightness)
+    if not quirk_mode then
+      return gui_text_with_shadow(gui, x, y, text, lightness)
+    end
     lightness = lightness or text_lightness
     local adjust
     if is_description then
@@ -1640,7 +1656,7 @@ local function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
         if current_group > 0 then
           elements_in_group_rendered[current_group] = elements_in_group_rendered[current_group] + 1
         end
-        table.insert(elements, { v.icon, v.text, value, ignore_width = v.ignore_width })
+        table.insert(elements, { v.icon, v.text, value, ignore_width = quirk_mode and v.ignore_width or false })
         just_hack_on = false
       end
     end
