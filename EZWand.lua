@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version v1.7.2   #######
+-- #######   EZWand version v2.0.0   #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -227,13 +227,10 @@ local function ends_with(str, ending)
 end
 
 -- Parses a serialized wand string into a table with it's properties
-local function deserialize(str)
-  if not starts_with(str, "EZW") then
-    return "Wrong wand import string format"
-  end
+local function deserialize_v1(str)
   local values = string_split(str, ";")
   if #values ~= 18 then
-    return "Wrong wand import string format"
+    error("Wrong wand import string format")
   end
 
   local out = {
@@ -267,6 +264,65 @@ local function deserialize(str)
 
   return out
 end
+
+-- Parses a serialized wand string into a table with it's properties
+local function deserialize_v2(str)
+  local values = string_split(str, ";")
+  if #values ~= 20 then
+    error("Wrong wand import string format")
+  end
+
+  local out = {
+    props = {
+      shuffle = values[2] == "1",
+      spellsPerCast = tonumber(values[3]),
+      castDelay = tonumber(values[4]),
+      rechargeTime = tonumber(values[5]),
+      manaMax = tonumber(values[6]),
+      mana = tonumber(values[7]),
+      manaChargeSpeed = tonumber(values[8]),
+      capacity = tonumber(values[9]),
+      spread = tonumber(values[10]),
+      speedMultiplier = tonumber(values[11])
+    },
+    spells = string_split(values[12] == "-" and "" or values[12], ","),
+    always_cast_spells = string_split(values[13] == "-" and "" or values[13], ","),
+    sprite_image_file = values[14],
+    offset_x = tonumber(values[15]),
+    offset_y = tonumber(values[16]),
+    tip_x = tonumber(values[17]),
+    tip_y = tonumber(values[18]),
+    name = values[19],
+    show_name_in_ui = (tonumber(values[20]) == 1) or false,
+  }
+
+  if #out.spells == 1 and out.spells[1] == "" then
+    out.spells = {}
+  end
+  if #out.always_cast_spells == 1 and out.always_cast_spells[1] == "" then
+    out.always_cast_spells = {}
+  end
+
+  return out
+end
+
+-- Parses a serialized wand string into a table with it's properties
+local function deserialize(str)
+  if not starts_with(str, "EZW") then
+    error("Wrong wand import string format")
+  end
+  local this_version = 2
+  local serialized_version = tonumber(str:match("EZWv(%d+)"))
+  if serialized_version > this_version then
+    return "Serialized wand was made with newer version of EZWand"
+  end
+  if serialized_version == 1 then
+    return deserialize_v1(str)
+  elseif serialized_version == 2 then
+    return deserialize_v2(str)
+  end
+end
+
 
 local spell_type_bgs = {
 	[ACTION_TYPE_PROJECTILE] = "data/ui_gfx/inventory/item_bg_projectile.png",
@@ -304,7 +360,9 @@ end
 --   offset_x = 0,
 --   offset_y = 0,
 --   tip_x = 0,
---   tip_y = 0
+--   tip_y = 0,
+--   name = "Shootblaster",
+--   show_name_in_ui = true
 -- }
 -- To get this easily you can use EZWand.Deserialize(EZWand(wand):Serialize())
 -- Better cache it though, it's not super expensive but...
@@ -586,6 +644,7 @@ function wand:new(from, rng_seed_x, rng_seed_y)
     -- Just load some existing wand that we alter later instead of creating one from scratch
     protected.entity_id = EntityLoad("data/entities/items/wand_level_04.xml", rng_seed_x or 0, rng_seed_y or 0)
     protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
+    protected.item_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "ItemComponent")
     -- Copy all validated props over or initialize with defaults
     local props = from or {}
     validate_wand_properties(props)
@@ -596,11 +655,13 @@ function wand:new(from, rng_seed_x, rng_seed_y)
     -- Wrap an existing wand
     protected.entity_id = from
     protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
+    protected.item_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "ItemComponent")
   else
     if starts_with(from, "EZW") then
       local values = deserialize(from)
       protected.entity_id = EntityLoad("data/entities/items/wand_level_04.xml", rng_seed_x or 0, rng_seed_y or 0)
       protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
+      protected.item_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "ItemComponent")
       validate_wand_properties(values.props)
       o:SetProperties(values.props)
       o:RemoveSpells()
@@ -615,11 +676,13 @@ function wand:new(from, rng_seed_x, rng_seed_y)
       end
       o:AttachSpells(values.always_cast_spells)
       o:SetSprite(values.sprite_image_file, values.offset_x, values.offset_y, values.tip_x, values.tip_y)
+      o:SetName(values.name, values.show_name_in_ui)
     -- Load a wand by xml
     elseif ends_with(from, ".xml") then
       local x, y = GameGetCameraPos()
       protected.entity_id = EntityLoad(from, rng_seed_x or x, rng_seed_y or y)
       protected.ability_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "AbilityComponent")
+      protected.item_component = EntityGetFirstComponentIncludingDisabled(protected.entity_id, "ItemComponent")
     else
       error("Wrong format for wand creation.", 2)
     end
@@ -1075,6 +1138,29 @@ function wand:UpdateSprite()
     (sprite_data.tip_y - sprite_data.grip_y))
 end
 
+function wand:SetName(name, show_in_ui)
+  if show_in_ui == nil then
+    show_in_ui = true
+  end
+  show_in_ui = not not show_in_ui
+  local item_comp = self.item_component
+  if item_comp then
+    ComponentSetValue2(item_comp, "item_name", tostring(name))
+    ComponentSetValue2(item_comp, "always_use_item_name_in_ui", show_in_ui)
+  end
+end
+
+-- returns name, show_in_ui
+function wand:GetName()
+  local item_comp = self.item_component
+  if item_comp then
+    local name = ComponentGetValue2(item_comp, "item_name")
+    local show_in_ui = ComponentGetValue2(item_comp, "always_use_item_name_in_ui")
+    return name, show_in_ui
+  end
+  error("No item component found", 2)
+end
+
 function wand:PlaceAt(x, y)
 	EntitySetComponentIsEnabled(self.entity_id, self.ability_component, true)
 	local hotspot_comp = EntityGetFirstComponentIncludingDisabled(self.entity_id, "HotspotComponent")
@@ -1131,7 +1217,7 @@ end
 -- Turns the wand properties etc into a string
 -- Output string looks like:
 -- EZWv(version);shuffle[1|0];spellsPerCast;castDelay;rechargeTime;manaMax;mana;manaChargeSpeed;capacity;spread;speedMultiplier;
--- SPELL_ONE,SPELL_TWO;ALWAYS_CAST_ONE,ALWAYS_CAST_TWO;sprite.png;offset_x;offset_y;tip_x;tip_y
+-- SPELL_ONE,SPELL_TWO;ALWAYS_CAST_ONE,ALWAYS_CAST_TWO;sprite.png;offset_x;offset_y;tip_x;tip_y;name;show_name
 function wand:Serialize()
   local spells_string = ""
   local always_casts_string = ""
@@ -1162,8 +1248,9 @@ function wand:Serialize()
     offset_y = 3.5
   end
 
-  local serialize_version = "1"
-  return ("EZWv%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%s;%d;%d;%d;%d"):format(
+  local name, show_name = self:GetName()
+  local serialize_version = "2"
+  return ("EZWv%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%s;%d;%d;%d;%d;%s;%d"):format(
     serialize_version,
     self.shuffle and 1 or 0,
     self.spellsPerCast,
@@ -1177,7 +1264,7 @@ function wand:Serialize()
     self.speedMultiplier,
     spells_string == "" and "-" or spells_string,
     always_casts_string == "" and "-" or always_casts_string,
-    sprite_image_file, offset_x, offset_y, tip_x, tip_y
+    sprite_image_file, offset_x, offset_y, tip_x, tip_y, name, show_name and 1 or 0
   )
 end
 

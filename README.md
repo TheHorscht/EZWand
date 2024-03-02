@@ -1,4 +1,4 @@
-# EZWand v1.7.2
+# EZWand v2.0.0
 
 A utility library for mod developers of Noita which simplifies the workflow of creating and manipulating wands. Use at your own risk I don't want to be responsible for your mod breaking :)
 
@@ -123,6 +123,10 @@ local cloned_wand = wand:Clone()
 -- based on capacity etc, use this after changing properties,
 -- if you want the sprite to match the stats
 wand:UpdateSprite()
+-- Sets the name and whether it will actually use it for displaying it in the UI
+-- show_name_in_ui will default to true
+wand:SetName("name", show_name_in_ui)
+local name, show_name_in_ui = wand:GetName()
 -- Places the wand in the world in an unpicked state,
 -- re-enables ray particles etc
 wand:PlaceAt(x, y)

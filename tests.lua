@@ -522,7 +522,7 @@ function test_serialize_deserialize()
   wand:AttachSpells("LIGHT_BULLET", "BULLET_TIMER", 2)
   wand:SetSprite("data/items_gfx/wands/wand_0666.png", 1, 2, 3, 4)
   local serialized = wand:Serialize()
-  local expected = "EZWv1;0;1;20;40;500;500;200;10;10;1;,,BOMB,BOMB,BLACK_HOLE,,,,,;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0666.png;1;2;3;4"
+  local expected = "EZWv2;0;1;20;40;500;500;200;10;10;1;,,BOMB,BOMB,BLACK_HOLE,,,,,;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0666.png;1;2;3;4;;0"
   -- First test if the serialized string matches what we expect
   assert(serialized == expected, string.format("\nExpected:\n%s\nGot:\n%s", expected, serialized))
   EntityKill(wand.entity_id)
@@ -531,6 +531,22 @@ function test_serialize_deserialize()
   -- check if it's the same by serializing it again and comparing the serialized string
   local serialized = wand:Serialize()
   assert(serialized == expected, string.format("\nExpected:\n%s\nGot:\n%s", expected, serialized))
+  EntityKill(wand.entity_id)
+
+  -- Test if deserializing an old version still works
+  local wand = Wand("EZWv1;0;1;20;40;500;500;200;10;10;1;,,BOMB,BOMB,BLACK_HOLE,,,,,;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0666.png;1;2;3;4")
+  EntityKill(wand.entity_id)
+
+  -- Test if name setting works
+  local wand = Wand("EZWv2;0;1;20;40;500;500;200;10;10;1;,,BOMB,BOMB,BLACK_HOLE,,,,,;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0666.png;1;2;3;4;HelloBlaster;0")
+  local name, show_in_ui = wand:GetName()
+  assert(name == "HelloBlaster")
+  assert(show_in_ui == false)
+  EntityKill(wand.entity_id)
+  local wand = Wand("EZWv2;0;1;20;40;500;500;200;10;10;1;,,BOMB,BOMB,BLACK_HOLE,,,,,;LIGHT_BULLET,BULLET_TIMER,BULLET_TIMER;data/items_gfx/wands/wand_0666.png;1;2;3;4;HelloBlaster;1")
+  local name, show_in_ui = wand:GetName()
+  assert(name == "HelloBlaster")
+  assert(show_in_ui == true)
   EntityKill(wand.entity_id)
 end
 

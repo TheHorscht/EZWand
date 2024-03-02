@@ -1,3 +1,7 @@
+v2.0.0:
+- Add wand:SetName() and wand:GetName()
+- Include name and always_use_item_name_in_ui in the serialized string
+
 v1.7.2:
 - inventory_x of spells only gets set once the inventory is opened after the wand has been
   added to the players inventory, to work around that, spells returned from GetSpells() will
