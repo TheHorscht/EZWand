@@ -1284,6 +1284,50 @@ function wand:RenderTooltip(origin_x, origin_y, gui_)
   end
 end
 
+local function shoot_spell_sequence(sequence, from_x, from_y, target_x, target_y)
+  local wand = wand:new({
+    shuffle = false,
+    spellsPerCast = 1,
+    castDelay = 0,
+    rechargeTime = 0,
+    manaMax = 10000,
+    manaChargeSpeed = 100,
+    capacity = 26,
+    spread = -100
+  })
+  wand:AddSpells(sequence)
+  EntitySetComponentsWithTagEnabled(wand.entity_id, "enabled_in_world", false)
+  for i, comp in ipairs(EntityGetComponent(wand.entity_id, "SpriteComponent") or {}) do
+    EntitySetComponentIsEnabled(wand.entity_id, comp, false)
+  end
+  local hotspot_comp = EntityGetFirstComponentIncludingDisabled(wand.entity_id, "HotspotComponent")
+  if hotspot_comp then
+    EntityRemoveComponent(wand.entity_id, hotspot_comp)
+  end
+  local entity = EntityCreateNew()
+  local inv_quick = EntityCreateNew("inventory_quick")
+  EntityAddChild(entity, inv_quick)
+  EntityAddChild(inv_quick, wand.entity_id)
+  EntitySetTransform(wand.entity_id, from_x, from_y)
+  EntitySetTransform(entity, from_x, from_y)
+  local controls_comp = EntityAddComponent2(entity, "ControlsComponent", {
+    enabled = false,
+  })
+  local aim_x, aim_y = target_x - from_x, target_y - from_y
+  ComponentSetValue2(controls_comp, "mAimingVector", aim_x, aim_y)
+  EntityAddComponent2(entity, "CharacterDataComponent", {})
+  EntityAddComponent2(entity, "SpriteAnimatorComponent", {})
+  EntityAddComponent2(entity, "CharacterPlatformingComponent", {})
+  EntityAddComponent2(entity, "Inventory2Component", {})
+  EntityAddComponent2(entity, "GunComponent", {})
+  EntityAddComponent2(entity, "PlatformShooterPlayerComponent", {
+    mForceFireOnNextUpdate = true,
+  })
+  EntityAddComponent2(entity, "LifetimeComponent", {
+    lifetime = 1,
+  })
+end
+
 return setmetatable({}, {
   __call = function(self, from, rng_seed_x, rng_seed_y)
     return wand:new(from, rng_seed_x, rng_seed_y)
@@ -1297,6 +1341,7 @@ return setmetatable({}, {
       RenderTooltip = render_tooltip,
       IsWand = entity_is_wand,
       GetHeldWand = get_held_wand,
+      ShootSpellSequence = shoot_spell_sequence,
     })[key]
   end
 })

@@ -1,3 +1,6 @@
+v2.1.0:
+- Add EZWand.ShootSpellSequence(sequence, source_x, source_y, target_x, target_y)
+
 v2.0.0:
 - Add wand:SetName() and wand:GetName()
 - Include name and always_use_item_name_in_ui in the serialized string

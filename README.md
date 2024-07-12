@@ -137,6 +137,8 @@ local image_file, offset_x, offset_y, tip_x, tip_y = wand:GetSprite()
 -- freeze_wand {boolean} prevents spells from being added to the wand or moved
 -- freeze_spells {boolean} prevents the spells from being removed
 wand:SetFrozen(freeze_wand, freeze_spells)
+-- Create an invisible wand and shoot it once!
+EZWand.ShootSpellSequence({ "LIGHT_BULLET_TRIGGER", "BOMB" }, source_x, source_y, target_x, target_y)
 ```
 ***
 Naming convention for the functions is Add/Remove for regular spells and Attach/Detach for always cast spells.
