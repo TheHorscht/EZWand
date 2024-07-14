@@ -1,5 +1,5 @@
 -- #########################################
--- #######   EZWand version vIF YOU SEE THIS I FORGOT TO UPDATE THE VERSION NUMBER AGAIN   #######
+-- #######       EZWand v2.2.0       #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -1525,10 +1525,6 @@ local function create_virtual_wand(from, rng_seed_x, rng_seed_y)
   -- Update the sprite to add the 0.5 offset
   o:SetSprite(o:GetSprite())
   local wand_entity_id = wand.entity_id
-  for i, comp in ipairs(EntityGetComponent(wand_entity_id, "SpriteComponent") or {}) do
-    EntitySetComponentIsEnabled(wand_entity_id, comp, false)
-    ComponentRemoveTag(comp, "enabled_in_hand")
-  end
   protected.hotspot_comp = EntityGetFirstComponentIncludingDisabled(wand_entity_id, "HotspotComponent", "shoot_pos")
   if protected.hotspot_comp then
     protected.shoot_offset_x, protected.shoot_offset_y = ComponentGetValue2(protected.hotspot_comp, "offset")
@@ -1553,6 +1549,10 @@ local function create_virtual_wand(from, rng_seed_x, rng_seed_y)
   EntityAddComponent2(holder_entity, "GunComponent", {})
   protected.platform_shooter_player_comp = EntityAddComponent2(holder_entity, "PlatformShooterPlayerComponent", {})
   return o
+end
+
+function wand:Deploy(x, y)
+  return create_virtual_wand(self.entity_id, x, y)
 end
 
 local function shoot_spell_sequence(sequence, from_x, from_y, target_x, target_y, herd)
@@ -1586,8 +1586,7 @@ return setmetatable({}, {
       RenderTooltip = render_tooltip,
       IsWand = entity_is_wand,
       GetHeldWand = get_held_wand,
-      ShootSpellSequence = shoot_spell_sequence,
-      CreateVirtualWand = create_virtual_wand
+      ShootSpellSequence = shoot_spell_sequence
     })[key]
   end
 })

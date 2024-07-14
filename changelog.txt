@@ -1,5 +1,5 @@
-UNRELEASED:
-- Add EZWand.CreateVirtualWand(from_wand_type, x, y)
+v2.2.0:
+- Add wand:Deploy(x, y)
 - Add wand:GiveTo(entity_id)
 - Add a herd argument to EZWand.ShootSpellSequence(sequence, source_x, source_y, target_x, target_y, herd)
 

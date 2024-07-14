@@ -137,8 +137,12 @@ local image_file, offset_x, offset_y, tip_x, tip_y = wand:GetSprite()
 -- freeze_wand {boolean} prevents spells from being added to the wand or moved
 -- freeze_spells {boolean} prevents the spells from being removed
 wand:SetFrozen(freeze_wand, freeze_spells)
--- Create an invisible wand and shoot it once!
-EZWand.ShootSpellSequence({ "LIGHT_BULLET_TRIGGER", "BOMB" }, source_x, source_y, target_x, target_y)
+-- Create an invisible wand and shoot it once! 'herd' is a herd string like "player" or "zombie"
+-- Won't hurt anyone who is the same herd, if not specified will default to player
+EZWand.ShootSpellSequence({ "LIGHT_BULLET_TRIGGER", "BOMB" }, source_x, source_y, target_x, target_y, herd)
+-- This will give the wand to an entity and make the entity be able to use wands, entity will drop the wand on death
+-- !!! DON'T USE THIS FOR THE PLAYER, use wand:PutInPlayersInventory() instead !!!
+wand:GiveTo(entity_id)
 ```
 ***
 Naming convention for the functions is Add/Remove for regular spells and Attach/Detach for always cast spells.
@@ -168,6 +172,26 @@ The names for the properties resemble the one found ingame, not the ones on the 
 You can always use your regular functions like EntityGetComponent etc using
 ```lua
 EntityHasTag(wand.entity_id, "wand")
+```
+## Shooting a virtual wand / Deploying a controllable wand
+```lua
+-- Create the wand however you like
+local wand = EZWand()
+local deployed_wand = wand:Deploy(x, y) -- Takes the x and y coordinates where it should be deployed
+-- Can use it's sprite or be invisible, when invisible will shoot from the entity center, otherwise from its usual wand sprite shoot offset
+deployed_wand.visible = false
+deployed_wand.rotation = 0 -- Angle in radians
+-- All wand manipulation functions are available for it too:
+deployed_wand:AddSpells("BOMB")
+-- Here's what is exclusvie to deployed wands:
+-- Will turn towards the target
+deployed_wand:AimAt(target_x, target_y)
+-- Will turn and shoot at a specified position
+deployed_wand:ShootAt(target_x, target_y)
+-- Shoots in the direction it is currently pointing
+deployed_wand:Shoot()
+-- Moves the wand to target location
+deployed_wand:SetPosition(x, y)
 ```
 ## Rendering a wand tooltip
 To render a wand tooltip you can use EZWand.RenderTooltip() to render a tooltip based on some predefined properties (no need for the wand to exist), or you can use
