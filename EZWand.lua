@@ -1,5 +1,5 @@
 -- #########################################
--- #######       EZWand v2.2.0       #######
+-- #######       EZWand v2.2.1       #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -10,6 +10,17 @@ dofile_once("data/scripts/gun/procedural/wands.lua")
 -- ##########################
 -- ####       UTILS      ####
 -- ##########################
+
+if not spell_lookup then
+  spell_lookup = {}
+  dofile_once("data/scripts/gun/gun_actions.lua")
+  for i, action in ipairs(actions) do
+    spell_lookup[action.id] = {
+      icon = action.sprite,
+      type = action.type
+    }
+  end
+end
 
 -- Removes spells from a table whose ID is not found in the gun_actions table
 local function filter_spells(spells)
@@ -381,17 +392,6 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     GuiStartFrame(gui)
   end
   GuiIdPushString(gui, "EZWand_tooltip")
-  -- GuiOptionsAdd(gui, GUI_OPTION.NonInteractive)
-  if not spell_lookup then
-    spell_lookup = {}
-    dofile_once("data/scripts/gun/gun_actions.lua")
-    for i, action in ipairs(actions) do
-      spell_lookup[action.id] = {
-        icon = action.sprite,
-        type = action.type
-      }
-    end
-  end
 
   local margin = -3
   local wand_name = "WAND"
@@ -1344,6 +1344,11 @@ local virtual_wand_props = {
       end
       ComponentSetValue2(genome_data_comp, "herd_id", StringToHerdId(value))
     end
+  },
+  exists = {
+    get = function(self)
+      return EntityGetIsAlive(self.entity_id)
+    end
   }
 }
 
@@ -1369,7 +1374,11 @@ function virtual_wand:__newindex(key, value)
   if rawget(self, "_protected")[key] ~= nil then
     error("Cannot set protected property '" .. key .. "'", 2)
   elseif virtual_wand_props[key] then
-    virtual_wand_props[key].set(self, value)
+    if virtual_wand_props[key].set then
+      virtual_wand_props[key].set(self, value)
+    else
+      error("'" .. key .. "' is read only.", 100)
+    end
   else -- Pass on all accesses to the underlying EZWand object
     self.wand[key] = value
   end
@@ -1509,18 +1518,35 @@ function wand:GiveTo(entity_id)
   give_wand_to_entity(self.entity_id, entity_id)
 end
 
+local function create_holder_entity()
+  -- Need to use EntityLoad because entities created with EntityCreateNew don't get saved
+  local entity_id = EntityLoad("data/entities/buildings/coop_respawn.xml")
+  EntitySetName(entity_id, "EZWand_virtual_wand")
+  EntityRemoveTag(entity_id, "coop_respawn")
+  -- local entity_id = EntityCreateNew("EZWand_virtual_wand")
+  local inv_quick = EntityCreateNew("inventory_quick")
+  EntityAddChild(entity_id, inv_quick)
+  -- Set scale_x to a tiny number to prevent a 1 pixel x swap on direction swapping
+  -- Thanks to @dextercd on Discord for this tip
+  EntitySetTransform(entity_id, 0, 0, 0, 0.000001)
+  EntityAddComponent2(entity_id, "CharacterDataComponent", {})
+  EntityAddComponent2(entity_id, "SpriteAnimatorComponent", {})
+  EntityAddComponent2(entity_id, "Inventory2Component", {})
+  EntityAddComponent2(entity_id, "GunComponent", {})
+  local controls_comp = EntityAddComponent2(entity_id, "ControlsComponent", {
+    enabled = false,
+  })
+  local character_platforming_component = EntityAddComponent2(entity_id, "CharacterPlatformingComponent", {})
+  local platform_shooter_player_comp = EntityAddComponent2(entity_id, "PlatformShooterPlayerComponent", {})
+  return entity_id, inv_quick, controls_comp, character_platforming_component, platform_shooter_player_comp
+end
+
 local function create_virtual_wand(from, rng_seed_x, rng_seed_y)
   local wand = wand:new(from, rng_seed_x, rng_seed_y)
   -- Still not sure how best to implement read only properties
-  local protected = {
-    wand = wand,
-  }
-  local o = setmetatable({
-    _protected = protected
-  }, virtual_wand)
-  virtual_wand_privates[o] = {
-    visible = true
-  }
+  local protected = { wand = wand }
+  local o = setmetatable({ _protected = protected }, virtual_wand)
+  virtual_wand_privates[o] = { visible = true }
   SetRandomSeed(rng_seed_x, rng_seed_y)
   -- Update the sprite to add the 0.5 offset
   o:SetSprite(o:GetSprite())
@@ -1529,30 +1555,42 @@ local function create_virtual_wand(from, rng_seed_x, rng_seed_y)
   if protected.hotspot_comp then
     protected.shoot_offset_x, protected.shoot_offset_y = ComponentGetValue2(protected.hotspot_comp, "offset")
   end
-  protected.entity_id = EntityCreateNew("EZWand_virtual_wand")
-  local holder_entity = protected.entity_id
-  local inv_quick = EntityCreateNew("inventory_quick")
-  EntityAddChild(holder_entity, inv_quick)
+  local holder_entity, inv_quick, controls_comp, character_platforming_component, platform_shooter_player_comp = create_holder_entity()
+  protected.entity_id = holder_entity
   uninventorify(wand_entity_id)
   EntityAddChild(inv_quick, wand_entity_id)
-  EntitySetTransform(wand_entity_id, rng_seed_x, rng_seed_y)
-  -- Set scale_x to a tiny number to prevent a 1 pixel x swap on direction swapping
-  -- Thanks to @dextercd on Discord for this tip
-  EntitySetTransform(holder_entity, rng_seed_x, rng_seed_y, 0, 0.000001)
-  protected.controls_comp = EntityAddComponent2(holder_entity, "ControlsComponent", {
-    enabled = false,
-  })
-  EntityAddComponent2(holder_entity, "CharacterDataComponent", {})
-  EntityAddComponent2(holder_entity, "SpriteAnimatorComponent", {})
-  protected.character_platforming_component = EntityAddComponent2(holder_entity, "CharacterPlatformingComponent", {})
-  EntityAddComponent2(holder_entity, "Inventory2Component", {})
-  EntityAddComponent2(holder_entity, "GunComponent", {})
-  protected.platform_shooter_player_comp = EntityAddComponent2(holder_entity, "PlatformShooterPlayerComponent", {})
+  EntityApplyTransform(holder_entity, rng_seed_x, rng_seed_y)
+  EntityApplyTransform(wand_entity_id, rng_seed_x, rng_seed_y)
+  protected.controls_comp = controls_comp
+  protected.character_platforming_component = character_platforming_component
+  protected.platform_shooter_player_comp = platform_shooter_player_comp
   return o
 end
 
 function wand:Deploy(x, y)
-  return create_virtual_wand(self.entity_id, x, y)
+  local root = EntityGetRootEntity(self.entity_id)
+  if EntityGetName(root) ~= "EZWand_virtual_wand" then
+    return create_virtual_wand(self.entity_id, x, y)
+  else
+    local protected = { wand = self }
+    local o = setmetatable({ _protected = protected }, virtual_wand)
+    virtual_wand_privates[o] = { visible = true }
+    SetRandomSeed(x, y)
+    -- Update the sprite to add the 0.5 offset
+    o:SetSprite(o:GetSprite())
+    local wand_entity_id = self.entity_id
+    protected.hotspot_comp = EntityGetFirstComponentIncludingDisabled(wand_entity_id, "HotspotComponent", "shoot_pos")
+    if protected.hotspot_comp then
+      protected.shoot_offset_x, protected.shoot_offset_y = ComponentGetValue2(protected.hotspot_comp, "offset")
+    end
+    protected.entity_id = root
+    local holder_entity = protected.entity_id
+    EntityApplyTransform(holder_entity, x, y)
+    protected.controls_comp = EntityGetFirstComponentIncludingDisabled(holder_entity, "ControlsComponent")
+    protected.character_platforming_component = EntityGetFirstComponentIncludingDisabled(holder_entity, "CharacterPlatformingComponent")
+    protected.platform_shooter_player_comp = EntityGetFirstComponentIncludingDisabled(holder_entity, "PlatformShooterPlayerComponent")
+    return o
+  end
 end
 
 local function shoot_spell_sequence(sequence, from_x, from_y, target_x, target_y, herd)

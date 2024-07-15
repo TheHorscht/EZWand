@@ -1,4 +1,4 @@
-# EZWand v2.2.0
+# EZWand v2.2.1
 
 A utility library for mod developers of Noita which simplifies the workflow of creating and manipulating wands. Use at your own risk I don't want to be responsible for your mod breaking :)
 
@@ -178,20 +178,26 @@ EntityHasTag(wand.entity_id, "wand")
 -- Create the wand however you like
 local wand = EZWand()
 local deployed_wand = wand:Deploy(x, y) -- Takes the x and y coordinates where it should be deployed
--- Can use it's sprite or be invisible, when invisible will shoot from the entity center, otherwise from its usual wand sprite shoot offset
-deployed_wand.visible = false
-deployed_wand.rotation = 0 -- Angle in radians
--- All wand manipulation functions are available for it too:
-deployed_wand:AddSpells("BOMB")
--- Here's what is exclusvie to deployed wands:
--- Will turn towards the target
-deployed_wand:AimAt(target_x, target_y)
--- Will turn and shoot at a specified position
-deployed_wand:ShootAt(target_x, target_y)
--- Shoots in the direction it is currently pointing
-deployed_wand:Shoot()
--- Moves the wand to target location
-deployed_wand:SetPosition(x, y)
+-- Always check if the wrapped wand still exists before trying to manipulate it.
+-- If you lose the reference to it, simply wrap the wand again and call deploy again
+if deployed_wand.exists then
+  -- Can use it's sprite or be invisible, when invisible will shoot from the entity center, otherwise from its usual wand sprite shoot offset
+  deployed_wand.visible = false
+  deployed_wand.rotation = 0 -- Angle in radians
+  -- All wand manipulation functions are available for it too:
+  deployed_wand:AddSpells("BOMB")
+  -- Here's what is exclusvie to deployed wands:
+  -- Will turn towards the target
+  deployed_wand:AimAt(target_x, target_y)
+  -- Will turn and shoot at a specified position
+  deployed_wand:ShootAt(target_x, target_y)
+  -- Shoots in the direction it is currently pointing
+  deployed_wand:Shoot()
+  -- Moves the wand to target location
+  deployed_wand:SetPosition(x, y)
+else
+  deployed_wand = EZWand(wand_entity_id):Deploy(x, y)-- Somehow find the wand again
+end
 ```
 ## Rendering a wand tooltip
 To render a wand tooltip you can use EZWand.RenderTooltip() to render a tooltip based on some predefined properties (no need for the wand to exist), or you can use

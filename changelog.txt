@@ -1,3 +1,8 @@
+v2.2.1:
+- FIX deployed wands not getting saved when quitting
+- Make it possible to reacquire a lost reference to a deployed wand by getting the wand and calling Deploy() again
+- Add deployed_wand.exists
+
 v2.2.0:
 - Add wand:Deploy(x, y)
 - Add wand:GiveTo(entity_id)
