@@ -1,5 +1,5 @@
 -- #########################################
--- #######       EZWand v2.2.1       #######
+-- #######       EZWand v2.2.2       #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -377,7 +377,8 @@ end
 -- }
 -- To get this easily you can use EZWand.Deserialize(EZWand(wand):Serialize())
 -- Better cache it though, it's not super expensive but...
-local function render_tooltip(origin_x, origin_y, wand, gui_)
+local function render_tooltip(origin_x, origin_y, wand, gui_, z)
+  z = tonumber(z) or 0
   origin_x = tonumber(origin_x)
   if not origin_x then
     error("RenderTooltip: Argument x is required and must be a number", 2)
@@ -416,25 +417,36 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   GuiLayoutBeginHorizontal(gui, origin_x, origin_y, true)
   GuiLayoutBeginVertical(gui, 0, 0)
   local text_lightness = 0.82
-  local function gui_text_with_shadow(gui, x, y, text, lightness)
+  local function gui_text_with_shadow(gui, x, y, text, lightness, z)
+    z = z or 0
     lightness = lightness or text_lightness
     GuiColorSetForNextWidget(gui, lightness, lightness, lightness, 1)
+    GuiZSetForNextWidget(gui, z - 1)
     GuiText(gui, x, y, text)
-    GuiZSetForNextWidget(gui, 8)
+    GuiZSetForNextWidget(gui, z)
     GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
     GuiColorSetForNextWidget(gui, 0, 0, 0, 0.83)
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
     GuiText(gui, x, y + 1, text)
   end
   GuiColorSetForNextWidget(gui, text_lightness, text_lightness, text_lightness, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiText(gui, 0, 0, wand_name)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 4, "data/ui_gfx/inventory/icon_gun_shuffle.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_gun_actions_per_round.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_fire_rate_wait.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_gun_reload_time.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_mana_max.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_mana_charge_speed.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_gun_capacity.png", 1, 1, 1)
+  GuiZSetForNextWidget(gui, z - 1)
   GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_spread_degrees.png", 1, 1, 1)
    -- Saves the position and width of the spread icon so we can draw the spells below it
   local _, _, _, last_icon_x, last_icon_y, last_icon_width, last_icon_height = GuiGetPreviousWidgetInfo(gui)
@@ -442,14 +454,14 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   local wand_name_width = GuiGetTextDimensions(gui, wand_name)
   GuiLayoutBeginVertical(gui, 12 - wand_name_width, -3, true)
   GuiText(gui, 0, 0, " ")
-  gui_text_with_shadow(gui, 0, 5, GameTextGetTranslatedOrNot("$inventory_shuffle"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_actionspercast"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_castdelay"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_rechargetime"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_manamax"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_manachargespeed"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_capacity"))
-  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_spread"))
+  gui_text_with_shadow(gui, 0, 5, GameTextGetTranslatedOrNot("$inventory_shuffle"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_actionspercast"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_castdelay"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_rechargetime"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_manamax"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_manachargespeed"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_capacity"), nil, z - 1)
+  gui_text_with_shadow(gui, 0, margin, GameTextGetTranslatedOrNot("$inventory_spread"), nil, z - 1)
   GuiLayoutEnd(gui)
   GuiLayoutBeginVertical(gui, -6, -3, true)
   GuiText(gui, 0, 0, " ")
@@ -465,22 +477,22 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     end
     return (pattern):format(input) .. " s"
   end
-  gui_text_with_shadow(gui, 0, 5, GameTextGetTranslatedOrNot(wand.props.shuffle and "$menu_yes" or "$menu_no"), 1)
+  gui_text_with_shadow(gui, 0, 5, GameTextGetTranslatedOrNot(wand.props.shuffle and "$menu_yes" or "$menu_no"), 1, z - 1)
   local _, _, _, _, no_text_y = GuiGetPreviousWidgetInfo(gui)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.spellsPerCast), 1)
+  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.spellsPerCast), 1, z - 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, format_cast_delay_and_recharge_time(wand.props.castDelay / 60), 1)
+  gui_text_with_shadow(gui, 0, margin, format_cast_delay_and_recharge_time(wand.props.castDelay / 60), 1, z - 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, format_cast_delay_and_recharge_time(wand.props.rechargeTime / 60), 1)
+  gui_text_with_shadow(gui, 0, margin, format_cast_delay_and_recharge_time(wand.props.rechargeTime / 60), 1, z - 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.manaMax), 1)
+  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.manaMax), 1, z - 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.manaChargeSpeed), 1)
+  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.manaChargeSpeed), 1, z - 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.capacity), 1)
+  gui_text_with_shadow(gui, 0, margin, ("%.0f"):format(wand.props.capacity), 1, z - 1)
   update_most_right_text_x()
-  gui_text_with_shadow(gui, 0, margin, ("%.1f DEG"):format(wand.props.spread), 1)
+  gui_text_with_shadow(gui, 0, margin, ("%.1f DEG"):format(wand.props.spread), 1, z - 1)
   update_most_right_text_x()
   update_bounds()
   local _, _, _, spread_text_x, spread_text_y, spread_text_width, spread_text_height = GuiGetPreviousWidgetInfo(gui)
@@ -493,9 +505,10 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     add_some = 3
     local background_scale = 0.768
     GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + last_icon_height + 8, true)
+    GuiZSetForNextWidget(gui, z - 1)
     GuiImage(gui, new_id(), 0, 1, "data/ui_gfx/inventory/icon_gun_permanent_actions.png", 1, 1, 1)
     _, _, _, last_icon_x, last_icon_y, last_icon_width, last_icon_height = GuiGetPreviousWidgetInfo(gui)
-    gui_text_with_shadow(gui, 3, 0, GameTextGetTranslatedOrNot("$inventory_alwayscasts"))
+    gui_text_with_shadow(gui, 3, 0, GameTextGetTranslatedOrNot("$inventory_alwayscasts"), 1, z - 1)
     local _, _, _, ac_icon_x, ac_icon_y, ac_icon_width, ac_icon_height = GuiGetPreviousWidgetInfo(gui)
     local last_ac_x, last_ac_y, last_ac_width, last_ac_height
     for i, spell in ipairs(wand.always_cast_spells) do
@@ -510,7 +523,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       else
         x, y = math.floor(last_ac_x + (last_ac_width - 2)) + 1, last_ac_y
       end
-      GuiZSetForNextWidget(gui, 9)
+      GuiZSetForNextWidget(gui, z - 1)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       -- Background / Spell type border
       GuiImage(gui, new_id(), x, y, item_bg_icon, 1, background_scale, background_scale)
@@ -518,6 +531,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
       local _, _, _, x, y, w, h = GuiGetPreviousWidgetInfo(gui)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       -- Spell icon
+      GuiZSetForNextWidget(gui, z - 1)
       GuiImage(gui, new_id(), x + 2, y + 2, (spell_lookup[spell] and spell_lookup[spell].icon) or "data/ui_gfx/gun_actions/unidentified.png", 1, always_cast_spell_icon_scale, always_cast_spell_icon_scale)
     end
     GuiLayoutEnd(gui)
@@ -529,14 +543,14 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
   GuiLayoutBeginHorizontal(gui, last_icon_x, last_icon_y + last_icon_height + 7 + add_some + 0.05, true)
   local row = 0
   for i=1, wand.props.capacity do
-    GuiZSetForNextWidget(gui, 9)
+    GuiZSetForNextWidget(gui, z - 1)
     GuiImage(gui, new_id(), -0.3, -0.4, "data/ui_gfx/inventory/inventory_box.png", 0.95, background_scale, background_scale)
     update_bounds()
     local _, _, _, x, y = GuiGetPreviousWidgetInfo(gui)
     x = x + 0.32479339599609
     y = y + 0.4
     local item_bg_icon = get_spell_bg(wand.spells[i])
-    GuiZSetForNextWidget(gui, 8.5)
+    GuiZSetForNextWidget(gui, z - 1.5)
     GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
     if not wand.spells[i] or wand.spells[i] == "" then
       -- Render an invisible (alpha = 0.0001) item just so it counts for the auto-layout
@@ -544,7 +558,7 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     else
       -- Background / Spell type border
       GuiImage(gui, new_id(), x - 2, y - 2, item_bg_icon, 0.75, background_scale, background_scale)
-      GuiZSetForNextWidget(gui, 8)
+      GuiZSetForNextWidget(gui, z - 2)
       GuiOptionsAddForNextWidget(gui, GUI_OPTION.Layout_NoLayouting)
       GuiImage(gui, new_id(), x + 0.11, y, (spell_lookup[wand.spells[i]] and spell_lookup[wand.spells[i]].icon) or "data/ui_gfx/gun_actions/unidentified.png", 0.8, spell_icon_scale, spell_icon_scale)
     end
@@ -569,11 +583,12 @@ local function render_tooltip(origin_x, origin_y, wand, gui_)
     local wand_sprite_place_center_y = no_text_y + vertical_space / 2
     local wand_sprite_x = wand_sprite_place_center_x - wand_sprite_height / 2
     local wand_sprite_y = wand_sprite_place_center_y + wand_sprite_width / 2
+    GuiZSetForNextWidget(gui, z - 1)
     GuiImage(gui, new_id(), wand_sprite_x, wand_sprite_y, wand.sprite_image_file, 1, 2, 2, -math.rad(90))
     update_bounds(-90)
   end
 
-  GuiZSetForNextWidget(gui, 10)
+  GuiZSetForNextWidget(gui, z)
   GuiImageNinePiece(gui, new_id(), origin_x - 5, origin_y - 5, right - (origin_x - 5) + 5,  bottom - (origin_y - 5) + 5)
   GuiIdPop(gui)
 end
@@ -1275,8 +1290,8 @@ local function get_held_wand()
   end
 end
 
-function wand:RenderTooltip(origin_x, origin_y, gui_)
-  local success, error_msg = pcall(render_tooltip, origin_x, origin_y, deserialize(self:Serialize()), gui_)
+function wand:RenderTooltip(origin_x, origin_y, gui_, z)
+  local success, error_msg = pcall(render_tooltip, origin_x, origin_y, deserialize(self:Serialize()), gui_, z)
   if not success then
     error(error_msg, 2)
   end

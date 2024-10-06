@@ -1,3 +1,6 @@
+v2.2.2:
+- Add z index argument to wand tooltip rendering
+
 v2.2.1:
 - FIX deployed wands not getting saved when quitting
 - Make it possible to reacquire a lost reference to a deployed wand by getting the wand and calling Deploy() again

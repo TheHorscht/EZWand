@@ -206,8 +206,8 @@ It creates its own gui object, so no need to provide one. Just call it every fra
 Spell tooltips don't work because they're hardcoded and we can't access info about them.
 If you're rendering your own GUI alongside this, it's recommended to pass in your gui to prevent mouse events from not working correctly.
 ```lua
-EZWand.RenderTooltip(x, y, props[, gui])
-wand:RenderTooltip(x, y[, gui])
+EZWand.RenderTooltip(x, y, props[, gui][, z_index])
+wand:RenderTooltip(x, y[, gui][, z_index])
 ```
 Where props is a table just like the one you get when using EZWand.Deserialize(), so to create that table you could do this (and better cache the result):
 ```lua
