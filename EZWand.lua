@@ -2198,7 +2198,8 @@ return setmetatable({}, {
       GetTooltipSize = get_tooltip_size,
       IsWand = entity_is_wand,
       GetHeldWand = get_held_wand,
-      ShootSpellSequence = shoot_spell_sequence
+      ShootSpellSequence = shoot_spell_sequence,
+      get_spell_bg = get_spell_bg
     })[key]
   end
 })
