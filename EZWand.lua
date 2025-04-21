@@ -1629,18 +1629,18 @@ local a = {
   { icon = "data/ui_gfx/inventory/icon_damage_critical_chance.png", text = "$inventory_mod_critchance", display_func = get_prop("c", "damage_critical_chance", 0, function(v) return sign_str(v) .. "%" end) },
 }
 
-function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
+function render_spell_tooltip(action_id_or_entity, origin_x, origin_y, gui_, custom_props)
   local quirk_mode = false
-  if type(action_id) ~= "string" then
-    error("RenderSpellTooltip: Argument action_id is required and must be a string", 2)
+  if type(action_id_or_entity) ~= "string" and type(action_id_or_entity) ~= "number" then
+    error("RenderSpellTooltip: Argument 'action_id_or_entity' is required and must be a string (action_id) or number (spell_card_entity_id)", 2)
   end
   origin_x = tonumber(origin_x)
   if not origin_x then
-    error("RenderSpellTooltip: Argument origin_x is required and must be a number", 2)
+    error("RenderSpellTooltip: Argument 'origin_x' is required and must be a number", 2)
   end
   origin_y = tonumber(origin_y)
   if not origin_y then
-    error("RenderSpellTooltip: Argument origin_y is required and must be a number", 2)
+    error("RenderSpellTooltip: Argument 'origin_y' is required and must be a number", 2)
   end
 
   local id = 1
@@ -1703,6 +1703,25 @@ function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   GuiZSet(gui, z)
   GuiIdPushString(gui, "EZWand_spell_tooltip")
 
+  local action_id, uses_remaining, spell_name = nil, (custom_props and custom_props.uses_remaining), nil
+  if type(action_id_or_entity) == "number" then
+    local item_action_comp = EntityGetFirstComponentIncludingDisabled(action_id_or_entity, "ItemActionComponent")
+    if item_action_comp then
+      action_id = ComponentGetValue2(item_action_comp, "action_id")
+    end
+    local item_comp = EntityGetFirstComponentIncludingDisabled(action_id_or_entity, "ItemComponent")
+    if item_comp then
+      uses_remaining = ComponentGetValue2(item_comp, "uses_remaining")
+    end
+    local ability_comp = EntityGetFirstComponentIncludingDisabled(action_id_or_entity, "AbilityComponent")
+    if ability_comp then
+      spell_name = ComponentGetValue2(ability_comp, "ui_name")
+      spell_name = GameTextGetTranslatedOrNot(spell_name):upper()
+    end
+  else
+    action_id = action_id_or_entity
+  end
+
   local x, y = origin_x, origin_y
   local right, bottom = x, y
   dofile_once("data/scripts/gun/gun_actions.lua")
@@ -1715,14 +1734,13 @@ function render_spell_tooltip(action_id, origin_x, origin_y, gui_)
   end
   local margin = -3
   local spacing_empty_rows = 5
-  -- Get uses remaining
-  local uses_remaining = action.max_uses
-  if it_a_card_item then
-    EntityGetFirstComponentIncludingDisabled(card_entity, "ItemComponent")
-    uses_remaining = ComponentGetValue2(card_entity, "uses_remaining")
+  if not uses_remaining then
+    uses_remaining = action.max_uses
   end
-  local spell_name = GameTextGetTranslatedOrNot(action.name):upper()
-  if uses_remaining then
+  if not spell_name then
+    spell_name = GameTextGetTranslatedOrNot(action.name):upper()
+  end
+  if uses_remaining and uses_remaining >= 0 then
     spell_name = spell_name .. (" (%d)"):format(uses_remaining)
   end
   GuiColorSetForNextWidget(gui, 1, 1, 1, 0.8)

@@ -2,6 +2,8 @@ UNRELEASED
 - Offset tooltip slightly so the top left corner is actually at the specified x, y coordinates
 - Modified the tooltip again slightly to try and make always casts pixel perfect
 - Add EZWand.GetTooltipSize(wandprops, gui) and wand:GetTooltipSize(gui)
+- Let RenderSpellTooltip choose between rendering it from action_id or existing spell entity_id
+- Add optional argument to RenderSpellTooltip to let you specify uses_remaining
 
 v2.2.2:
 - Add z index argument to wand tooltip rendering
