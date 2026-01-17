@@ -1,5 +1,5 @@
 -- #########################################
--- #######       EZWand v2.2.2       #######
+-- #######       EZWand v2.2.2*      #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -1494,7 +1494,7 @@ function get_action_metadata(action_id)
     EntityLoad = function() end
     reset_modifiers(c)
     ConfigGunShotEffects_Init(shot_effects)
-    action_data[action_id].action()
+    local success = pcall(action_data[action_id].action)
     EntityLoad = _EntityLoad
     draw_actions = _draw_actions
     for k, v in pairs(c) do

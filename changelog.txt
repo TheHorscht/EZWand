@@ -4,6 +4,7 @@ UNRELEASED
 - Add EZWand.GetTooltipSize(wandprops, gui) and wand:GetTooltipSize(gui)
 - Let RenderSpellTooltip choose between rendering it from action_id or existing spell entity_id
 - Add optional argument to RenderSpellTooltip to let you specify uses_remaining
+- Ignore errors when calling a spells action function for collecting metadata for tooltips, might result in more bugs? Incorrect tooltips?
 
 v2.2.2:
 - Add z index argument to wand tooltip rendering
