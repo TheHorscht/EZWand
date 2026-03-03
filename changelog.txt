@@ -1,3 +1,6 @@
+v2.2.3:
+- FIX IsWand(entity_id) function
+
 v2.2.2:
 - Add z index argument to wand tooltip rendering
 
