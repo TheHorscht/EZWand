@@ -1,5 +1,5 @@
 -- #########################################
--- #######       EZWand v2.2.2       #######
+-- #######       EZWand v2.2.3       #######
 -- #########################################
 
 dofile_once("data/scripts/gun/procedural/gun_action_utils.lua")
@@ -226,7 +226,11 @@ end
 -- Returns true if entity is a wand
 local function entity_is_wand(entity_id)
 	local ability_component = EntityGetFirstComponentIncludingDisabled(entity_id, "AbilityComponent")
-	return ComponentGetValue2(ability_component, "use_gun_script") == true
+  if ability_component then
+    return ComponentGetValue2(ability_component, "use_gun_script") == true
+  else
+    return false
+  end
 end
 
 local function starts_with(str, start)
